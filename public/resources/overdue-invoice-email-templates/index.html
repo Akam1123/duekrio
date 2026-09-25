@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overdue invoice email templates for B2B teams — PromiseLedger</title>
+  <meta name="description" content="Copy three professional overdue invoice follow-up email templates and learn when to use each. Free, editable, and designed for human review.">
+  <link rel="canonical" href="https://akam1123.github.io/promiseledger/resources/overdue-invoice-email-templates/">
+  <meta property="og:type" content="article"><meta property="og:title" content="Overdue invoice email templates — PromiseLedger"><meta property="og:description" content="Three copyable follow-ups for a status check, a missing document, and a payment promise."><meta property="og:url" content="https://akam1123.github.io/promiseledger/resources/overdue-invoice-email-templates/"><meta property="og:image" content="https://akam1123.github.io/promiseledger/og-card.png"><meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="../../site-content.css"><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-nav wrap"><a class="brand" href="../../"><span class="mark">p</span><span>promise<span>ledger</span></span></a><nav class="nav-links" aria-label="Main navigation"><a href="../">Resources</a><a class="cta" href="../../#/app">Open workspace</a></nav></header>
+  <main id="main">
+    <div class="hero"><div class="wrap"><div class="eyebrow">Communication guide</div><h1>Overdue invoice email templates that move the conversation forward.</h1><p>Start with the facts, ask one clear question, and leave room to resolve the real blocker. Copy a template, then tailor it to the customer.</p><div class="meta">Free templates · About 5 minutes to read</div></div></div>
+    <article class="content wrap">
+      <p>A reminder is useful when an invoice has simply slipped through. When payment is stuck for another reason, repeating the same reminder can create noise. Check the ledger first, then choose the message that fits what you actually know.</p>
+      <div class="note"><strong>Before you send:</strong><p>Confirm the outstanding balance, due date, customer contact, previous conversation, and whether payment has already arrived. Replace every bracketed field. Keep the tone appropriate for the relationship and your firm's policy.</p></div>
+
+      <h2>Copy-and-edit templates</h2>
+
+      <section class="template" aria-labelledby="status-title"><h3 id="status-title">1. A simple payment-status check</h3><p>Use this when the invoice appears overdue and you have no specific blocker yet.</p><pre id="status-copy">Subject: Invoice [number] — payment status
+
+Hello [name],
+
+I'm following up on invoice [number] for [amount], due [date]. Could you let me know its payment status and whether you need anything from us to process it?
+
+If payment has already been sent, please disregard this note and let me know so I can update our records.
+
+Thank you,
+[your name]</pre><button class="copy" type="button" data-copy="status-copy">Copy template</button><span class="copy-status" aria-live="polite"></span></section>
+
+      <section class="template" aria-labelledby="document-title"><h3 id="document-title">2. A missing PO or document</h3><p>Use this when the customer has said a purchase order, reference, or supporting document is blocking payment.</p><pre id="document-copy">Subject: What is needed for invoice [number]?
+
+Hello [name],
+
+I'm checking what is needed to process invoice [number] for [amount]. I understand a [PO/reference/document] may be missing. Could you confirm the exact item and where we should send it?
+
+Once we have that, I can make sure the right person on our side follows through.
+
+Thank you,
+[your name]</pre><button class="copy" type="button" data-copy="document-copy">Copy template</button><span class="copy-status" aria-live="polite"></span></section>
+
+      <section class="template" aria-labelledby="promise-title"><h3 id="promise-title">3. Confirming a payment promise</h3><p>Use this only after a customer has given you a specific expected payment date.</p><pre id="promise-copy">Subject: Confirming next steps for invoice [number]
+
+Hello [name],
+
+Thank you for the update on invoice [number] for [amount]. I have noted [promised date] as the expected payment date. Could you confirm that timing still works, or let me know if anything has changed?
+
+If there is a blocker we can help resolve, please tell me what is needed.
+
+Thank you,
+[your name]</pre><button class="copy" type="button" data-copy="promise-copy">Copy template</button><span class="copy-status" aria-live="polite"></span></section>
+
+      <h2>What to record after the message</h2>
+      <p>Keep the result of the exchange where the next person can see it: the specific blocker, who owns the next action, the date you will check again, and any payment date the customer actually gave. A promise is useful context, but it is not proof of payment. Confirm receipt in your accounting system before marking an invoice paid.</p>
+      <p>PromiseLedger turns a CSV aging report into a follow-up board and prepares a draft based on the blocker you record. You review and send it yourself. It does not connect to your email or automatically contact customers.</p>
+      <div class="callout"><h2>Give every invoice a next move.</h2><p>Explore fictional sample invoices first, then import your own authorized CSV if the workflow fits.</p><a class="button" href="../../#/app">Open free workspace</a></div>
+    </article>
+  </main>
+  <footer class="footer"><div class="wrap"><span>PromiseLedger · Free early access</span><div class="footer-links"><a href="../../">Home</a><a href="../">Resources</a><a href="../../privacy/">Privacy</a><a href="https://github.com/Akam1123/promiseledger">Source</a></div></div></footer>
+  <script>document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => { const text = document.getElementById(button.dataset.copy)?.textContent || ''; const status = button.nextElementSibling; try { await navigator.clipboard.writeText(text); status.textContent = 'Copied. Review every detail before sending.' } catch { status.textContent = 'Copy was blocked by your browser. Select the text above instead.' } }))</script>
+</body>
+</html>

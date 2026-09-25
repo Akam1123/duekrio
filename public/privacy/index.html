@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy & data storage — PromiseLedger</title>
+  <meta name="description" content="How PromiseLedger stores invoice data, what leaves your browser, and how to keep your own backup.">
+  <link rel="canonical" href="https://akam1123.github.io/promiseledger/privacy/">
+  <link rel="stylesheet" href="../site-content.css"><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-nav wrap"><a class="brand" href="../"><span class="mark">p</span><span>promise<span>ledger</span></span></a><nav class="nav-links" aria-label="Main navigation"><a href="../resources/">Resources</a><a class="cta" href="../#/app">Open workspace</a></nav></header>
+  <main id="main">
+    <div class="hero"><div class="wrap"><div class="eyebrow">Privacy & data storage</div><h1>Your invoice workspace stays in your browser.</h1><p>A clear explanation of the current release, so you can decide what information belongs here.</p><div class="meta">Last updated September 25, 2026</div></div></div>
+    <article class="content wrap">
+      <h2>What the app stores</h2>
+      <p>When you import a CSV, add an invoice, or write a follow-up note, PromiseLedger stores that workspace in your browser's local storage on this device. The workspace can include customer names, invoice numbers, email addresses, amounts, dates, owners, blockers, and notes that you choose to enter.</p>
+      <p>The current app has no account system, cloud sync, server-side backup, analytics script, or automatic email sending. Its code runs in your browser. We do not receive your imported invoices or notes through an application server.</p>
+      <div class="note"><strong>Back up your work.</strong><p>Browser storage can be lost if you clear site data, change browsers, use private browsing, or switch devices. Choose <strong>Backup JSON</strong> in the workspace and store the file according to your firm's security policy. You can restore that file later.</p></div>
+      <h2>What the host may see</h2>
+      <p>The website is currently served by GitHub Pages. Like other web hosts, GitHub may record request information such as your IP address when you visit. GitHub describes this in its <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noreferrer">privacy statement</a>. The public source code is available on <a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">GitHub</a>.</p>
+      <h2>What happens when you use external actions</h2>
+      <p><strong>Open email app</strong> creates a draft in your own email software. <strong>Copy draft</strong> copies text to your clipboard. Nothing is sent automatically. <strong>Backup JSON</strong> and <strong>Export CSV</strong> create files on your device. If you open a GitHub feedback link, you leave PromiseLedger and GitHub's own policies apply.</p>
+      <h2>Who can access the stored workspace</h2>
+      <p>Someone with access to your browser profile or exported backup file may be able to read your data. Do not use this prototype on an untrusted shared device. Avoid putting bank credentials, identity documents, or sensitive dispute details in notes. Only import records you are authorized to handle.</p>
+      <h2>Delete or move your data</h2>
+      <p>You can delete individual invoices in the workspace. To remove all locally saved data, clear site data for this website in your browser settings. Export a JSON backup first if you may need it. The hosted site and an offline HTML copy use separate browser storage; a backup file is the way to move work between them.</p>
+      <h2>Questions or corrections</h2>
+      <p>Use the <a href="https://github.com/Akam1123/promiseledger/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">public feedback form on GitHub</a>. It requires a GitHub account. Do not include real customer or invoice data in a public issue.</p>
+      <div class="callout"><h2>Ready to work?</h2><p>Start with fictional sample data, then decide whether to import your own CSV.</p><a class="button" href="../#/app">Open free workspace</a></div>
+    </article>
+  </main>
+  <footer class="footer"><div class="wrap"><span>PromiseLedger · Free early access</span><div class="footer-links"><a href="../">Home</a><a href="../resources/">Resources</a><a href="./">Privacy</a><a href="https://github.com/Akam1123/promiseledger">Source</a></div></div></footer>
+</body>
+</html>

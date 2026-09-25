@@ -2,9 +2,9 @@
 
 **A local-first invoice resolution board for small B2B service firms.**
 
-PromiseLedger helps a 5–30 person team turn an accounts receivable export into a clear follow-up plan: which invoice needs attention, why it remains unpaid, who owns the next step, and what the customer has promised. It prepares email drafts for a person to review and send through their own email client.
+PromiseLedger helps one person handling receivables at a small B2B service firm turn an accounts receivable export into a clear follow-up plan: which invoice needs attention, why it remains unpaid, who owns the next step, and what the customer has promised. It prepares email drafts for a person to review and send through their own email client.
 
-**[Try the live workspace](https://akam1123.github.io/promiseledger/)** · [Read the market thesis](docs/MARKET.md) · [See the first-customer plan](docs/GO_TO_MARKET.md)
+**[Try the live workspace](https://akam1123.github.io/promiseledger/)** · [Free AR resources](https://akam1123.github.io/promiseledger/resources/) · [Privacy and data storage](https://akam1123.github.io/promiseledger/privacy/) · [Read the market thesis](docs/MARKET.md)
 
 **Opening a downloaded copy?** Double-click `index.html`; it opens the self-contained `PromiseLedger-offline.html` beside it. You can also open that offline file directly. Keep both files together if using the redirect. The live and offline copies have separate browser storage, so export a JSON backup if you move work between them.
 
@@ -19,6 +19,7 @@ PromiseLedger helps a 5–30 person team turn an accounts receivable export into
 - Prepare a contextual follow-up email draft for human review.
 - Export your working data as CSV or a JSON backup, and restore that JSON backup.
 - Review invoices absent from a later import and invoices marked paid locally that still appear in the new report.
+- Preview a CSV before it changes your workspace. The preview shows rows that will be skipped and flags reconciliation items; you must explicitly confirm the import.
 
 The included demo and [sample AR CSV](public/sample-ar-aging.csv) use fictional invoices so you can explore the workflow without importing real customer data.
 
@@ -42,7 +43,7 @@ These commands run from this repository's root. See `package.json` for the exact
 
 ## Basic workflow
 
-1. Choose **Explore sample data**, **Import CSV**, or **Add invoice**. A flat AR CSV needs customer, invoice number, **remaining amount due**, and due date columns; common header variants are recognized. If both `Amount` and `Balance` columns exist, the importer uses the balance. Dates must be `YYYY-MM-DD` or US `M/D/YYYY`, and amounts are treated as USD.
+1. Choose **Explore sample data**, **Import CSV**, or **Add invoice**. A flat AR CSV up to 2 MB needs customer, invoice number, **remaining amount due**, and due date columns; common header variants are recognized. If both `Amount` and `Balance` columns exist, the importer uses the balance. Dates must be `YYYY-MM-DD` or US `M/D/YYYY`, and amounts are treated as USD. Review the preview and any skipped rows before confirming an import.
 2. For each open invoice, record the blocker, responsible teammate, and next action.
 3. Capture a customer's promised payment date when one exists.
 4. Review an email draft. Copy it or open it in your email app, then check the facts, recipient, and tone before sending.
@@ -53,11 +54,17 @@ These commands run from this repository's root. See `package.json` for the exact
 
 PromiseLedger is local-first. The prototype has no account, cloud sync, or server-side backup. Working data remains in this browser on this device; clearing browser storage or changing devices can remove access to it. Use the export function to keep a separate backup. Anyone with access to your browser profile may be able to view the stored data, so use a trusted device and avoid importing information you are not authorized to handle.
 
+If saved browser data cannot be read, the app pauses changes and offers a download of the unreadable data before you choose to restore a valid backup or discard it. That download is a recovery aid, not a guaranteed repair.
+
 An owner name on an invoice is an organizational label. It does not grant access, assign an account, or notify that teammate.
 
 CSV import is a manual snapshot, and some accounting-system exports may need column cleanup. Reimport retains your notes and invoices absent from the new file; absence does not mean an invoice was paid. A persistent review queue flags absent open invoices and locally paid invoices still in the new CSV. PromiseLedger does not connect to QuickBooks or Xero, verify balances against either system, send email, collect payments, or bill customers. Drafts require a human to review them and decide whether to send them. Treat the accounting system as the source of truth.
 
 See [the product brief](docs/PRODUCT.md) for scope and planned next steps.
+
+## Launch preparation
+
+The [zero-budget marketing plan](docs/marketing/LAUNCH.md), [finished copy and creative brief](docs/marketing/ASSETS.md), [AI writing workflow](docs/marketing/AI_WORKFLOW.md), and [measurement sheet](docs/marketing/MEASUREMENT.md) are prepared. External promotion is on hold at the owner's request: no social posts, outreach, ads, or search-engine submissions have been sent.
 
 ## License
 

@@ -34,17 +34,20 @@ import {
   parseInvoiceCsv,
   prioritizeInvoices,
 } from './lib/ledger'
-import type { Invoice, InvoiceAnnotation } from './lib/types'
+import type { CsvImportResult, Invoice, InvoiceAnnotation } from './lib/types'
 
 type View = 'home' | 'app'
 type QueueFilter = 'all' | 'overdue' | 'action' | 'promise' | 'review' | 'paid'
 type Toast = { text: string; kind?: 'good' | 'warn' }
 type ImportReview = { missingKeys: string[]; paidSeenKeys: string[] }
+type PendingImport = { fileName: string; result: CsvImportResult; review: ImportReview; replacingDemo: boolean }
 const emptyReview = (): ImportReview => ({ missingKeys: [], paidSeenKeys: [] })
 
 const STORAGE_KEY = 'promiseledger.workspace.v1'
+const MAX_CSV_BYTES = 2 * 1024 * 1024
 const sampleCsvUrl = (window as Window & { __PROMISELEDGER_SAMPLE_CSV_URL__?: string }).__PROMISELEDGER_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
+const contentBaseUrl = window.location.protocol === 'file:' ? 'https://akam1123.github.io/promiseledger/' : import.meta.env.BASE_URL
 const today = () => {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -192,7 +195,7 @@ function Brand({ onClick }: { onClick: () => void }) {
   </button>
 }
 
-function Landing({ openApp }: { openApp: () => void }) {
+function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => void; startSample: () => void; sampleAvailable: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return <div className="site-shell">
     <header className="site-nav wrap">
@@ -200,7 +203,8 @@ function Landing({ openApp }: { openApp: () => void }) {
       <nav className={menuOpen ? 'site-links open' : 'site-links'} aria-label="Main navigation">
         <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
         <a href="#who-it-is-for" onClick={() => setMenuOpen(false)}>Who it is for</a>
-        <a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={14} /></a>
+        <a href={`${contentBaseUrl}resources/`}>Resources</a>
+        <a href={`${contentBaseUrl}privacy/`}>Privacy</a>
         <button className="nav-cta" onClick={openApp}>Open workspace <ArrowRight size={16} /></button>
       </nav>
       <button className="mobile-menu" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22} /> : <Menu size={22} />}</button>
@@ -211,12 +215,12 @@ function Landing({ openApp }: { openApp: () => void }) {
         <div className="hero-copy">
           <div className="eyebrow"><span className="eyebrow-dot" /> A clearer way to work your receivables</div>
           <h1>Every unpaid invoice has a reason. <em>Give it a next move.</em></h1>
-          <p className="hero-intro">An aging report tells you what is overdue. PromiseLedger helps your team track <strong>why</strong>, <strong>who owns it</strong>, and <strong>what happens next</strong>—without replacing your accounting software.</p>
+          <p className="hero-intro">An aging report tells you what is overdue. PromiseLedger helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
           <div className="hero-actions">
             <button className="button button-primary button-large" onClick={openApp}>Open free workspace <ArrowRight size={19} /></button>
-            <a className="text-link" href="#how-it-works">See how it works <ArrowDownToLine size={17} /></a>
+            {sampleAvailable ? <button className="text-link text-link-button" onClick={startSample}>Explore sample data <ArrowRight size={17} /></button> : <a className="text-link" href="#how-it-works">See how it works <ArrowDownToLine size={17} /></a>}
           </div>
-          <div className="hero-trust"><ShieldCheck size={17} /><span>No account · No bank connection · Data stays in this browser</span></div>
+          <div className="hero-trust"><ShieldCheck size={17} /><span>No account · No bank connection · Browser-only storage. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span></div>
         </div>
         <div className="hero-visual" aria-label="Illustration of the PromiseLedger action board">
           <div className="visual-glow" />
@@ -239,18 +243,25 @@ function Landing({ openApp }: { openApp: () => void }) {
       <section id="how-it-works" className="section wrap">
         <div className="section-heading"><div><span className="kicker">THE WORKFLOW</span><h2>From overdue list to resolution plan.</h2></div><p>Keep invoicing in the system you already use. Bring the open items here for a focused weekly review.</p></div>
         <div className="steps-grid">
-          <article className="step-card"><span className="step-no">01</span><div className="step-icon mint"><FileSpreadsheet size={25} /></div><h3>Import your aging CSV</h3><p>Start with a simple export or add an invoice by hand. A repeat import updates balances while keeping your notes and decisions.</p></article>
+          <article className="step-card"><span className="step-no">01</span><div className="step-icon mint"><FileSpreadsheet size={25} /></div><h3>Import your aging CSV</h3><p>Preview the rows before confirming. A repeat import updates balances while keeping your notes and decisions.</p></article>
           <article className="step-card"><span className="step-no">02</span><div className="step-icon peach"><Filter size={25} /></div><h3>Name the blocker</h3><p>Record the reason payment is stuck, the person responsible, the next action, and any payment commitment.</p></article>
-          <article className="step-card"><span className="step-no">03</span><div className="step-icon lilac"><TrendingUp size={25} /></div><h3>Run the weekly queue</h3><p>See overdue actions and missed promises first. Draft a personal follow-up, then export your work for the team.</p></article>
+          <article className="step-card"><span className="step-no">03</span><div className="step-icon lilac"><TrendingUp size={25} /></div><h3>Run the weekly queue</h3><p>See overdue actions and missed promises first. Review a follow-up draft, then keep your own backup.</p></article>
         </div>
       </section>
 
       <section id="who-it-is-for" className="fit-section">
-        <div className="wrap fit-grid"><div><span className="kicker">A SMALL, USEFUL FIRST STEP</span><h2>For teams too busy to babysit an aging report.</h2><p>Made for small B2B service firms that send invoices from QuickBooks, Xero, or another ledger and need a clearer human follow-up process.</p><div className="fit-list"><span><CheckCircle2 size={19} /> Agencies and consultancies</span><span><CheckCircle2 size={19} /> Field service and project firms</span><span><CheckCircle2 size={19} /> Owner-led finance teams</span></div></div><div className="fit-card"><span className="fit-card-top"><LockKeyhole size={20} /> EARLY ACCESS WORKSPACE</span><h3>Free to use while we learn.</h3><p>This first release runs in your browser. It does not send emails, connect to a ledger, process payments, or offer multi-user sync.</p><button className="button button-primary" onClick={openApp}>Try the workspace <ArrowRight size={18} /></button><small>Keep a JSON backup before clearing browser data.</small></div></div>
+        <div className="wrap fit-grid"><div><span className="kicker">A SMALL, USEFUL FIRST STEP</span><h2>For the person who runs the weekly follow-up.</h2><p>Made for small B2B service firms that send invoices from QuickBooks, Xero, or another ledger and need a clearer human follow-up process. The owner field is a label in your own workspace, not a shared teammate account.</p><div className="fit-list"><span><CheckCircle2 size={19} /> Agencies and consultancies</span><span><CheckCircle2 size={19} /> Field service and project firms</span><span><CheckCircle2 size={19} /> Owner-led finance teams</span></div></div><div className="fit-card"><span className="fit-card-top"><LockKeyhole size={20} /> EARLY ACCESS WORKSPACE</span><h3>Free to use while we learn.</h3><p>This first release runs in your browser. It does not send emails, connect to a ledger, process payments, or offer multi-user sync.</p><button className="button button-primary" onClick={openApp}>Try the workspace <ArrowRight size={18} /></button><small>Keep a JSON backup before clearing browser data.</small></div></div>
       </section>
+
+      <section className="section wrap resources-section" aria-labelledby="resources-title">
+        <div className="section-heading"><div><span className="kicker">FREE PRACTICAL GUIDES</span><h2 id="resources-title">Build a better follow-up habit.</h2></div><p>Useful even if you keep working in a spreadsheet. Each guide uses fictional examples and puts a person in control.</p></div>
+        <div className="resource-grid"><a href={`${contentBaseUrl}resources/weekly-ar-review-checklist/`} className="resource-card"><span>WORKFLOW GUIDE</span><h3>Weekly AR review checklist</h3><p>From a current aging report to one owner and one next action for every exception.</p><b>Read the checklist <ArrowRight size={17} /></b></a><a href={`${contentBaseUrl}resources/overdue-invoice-email-templates/`} className="resource-card"><span>COMMUNICATION GUIDE</span><h3>Overdue invoice email templates</h3><p>Copyable, human-reviewed messages for a status check, a missing document, and a payment promise.</p><b>See the templates <ArrowRight size={17} /></b></a></div>
+      </section>
+
+      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>PromiseLedger is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does PromiseLedger send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
     </main>
 
-    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></footer>
+    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
   </div>
 }
 
@@ -258,7 +269,7 @@ function loadSaved(): { invoices: Invoice[]; demo: boolean; review: ImportReview
   let raw: string | null = null
   try {
     raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { invoices: [], demo: false, review: emptyReview() }
+    if (raw === null) return { invoices: [], demo: false, review: emptyReview() }
     const parsed = JSON.parse(raw) as { invoices?: unknown; demo?: unknown; review?: Partial<ImportReview> }
     const invoices = importLedgerJson(JSON.stringify({ format: 'promiseledger', version: 1, invoices: parsed.invoices }))
     const review = parsed.review && Array.isArray(parsed.review.missingKeys) && Array.isArray(parsed.review.paidSeenKeys)
@@ -266,7 +277,9 @@ function loadSaved(): { invoices: Invoice[]; demo: boolean; review: ImportReview
       : emptyReview()
     return { invoices, demo: parsed.demo === true, review }
   } catch {
-    return { invoices: [], demo: false, review: emptyReview(), warning: 'Saved browser data could not be loaded. Download the raw copy before importing new data or restore a JSON backup.', corruptRaw: raw || undefined }
+    return raw === null
+      ? { invoices: [], demo: false, review: emptyReview(), warning: 'Browser storage could not be read. Changes may not be saved; export a JSON backup before leaving.' }
+      : { invoices: [], demo: false, review: emptyReview(), warning: 'Saved browser data could not be loaded.', corruptRaw: raw }
   }
 }
 
@@ -276,7 +289,8 @@ function App() {
   const [invoices, setInvoices] = useState<Invoice[]>(saved.invoices)
   const [demo, setDemo] = useState(saved.demo)
   const [importReview, setImportReview] = useState<ImportReview>(saved.review)
-  const [loadBlocked, setLoadBlocked] = useState(Boolean(saved.warning))
+  const [loadBlocked, setLoadBlocked] = useState(saved.corruptRaw !== undefined)
+  const [rawDownloaded, setRawDownloaded] = useState(false)
   const [storageWarning, setStorageWarning] = useState(saved.warning || '')
   const [toast, setToast] = useState<Toast | null>(null)
   const [search, setSearch] = useState('')
@@ -284,14 +298,19 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const csvInput = useRef<HTMLInputElement>(null)
   const restoreInput = useRef<HTMLInputElement>(null)
+  const invoicesRef = useRef(invoices)
+  const demoRef = useRef(demo)
+  invoicesRef.current = invoices
+  demoRef.current = demo
   const asOf = today()
 
   useEffect(() => {
     if (loadBlocked) return
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ invoices, demo, review: importReview })) }
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ invoices, demo, review: importReview })); setStorageWarning('') }
     catch { setStorageWarning('Browser storage is unavailable or full. Export a JSON backup before leaving this page.') }
   }, [invoices, demo, importReview, loadBlocked])
 
@@ -336,12 +355,19 @@ function App() {
 
   async function importCsv(file?: File) {
     if (!file) return
+    if (loadBlocked) {
+      setToast({ text: 'Download the unreadable raw data, then restore or discard it before importing.', kind: 'warn' })
+      if (csvInput.current) csvInput.current.value = ''
+      return
+    }
     try {
+      if (file.size > MAX_CSV_BYTES) throw new Error('This CSV is over 2 MB. Export a smaller aging report and try again.')
       const text = await file.text()
-      const current = demo ? [] : invoices
+      const currentDemo = demoRef.current
+      const current = currentDemo ? [] : invoicesRef.current
       const result = parseInvoiceCsv(text, current)
       if (result.added + result.updated === 0) {
-        setToast({ text: result.issues[0]?.message || 'No invoices imported. Check the CSV headers and rows.', kind: 'warn' })
+        setPendingImport({ fileName: file.name, result, review: emptyReview(), replacingDemo: currentDemo })
         return
       }
       const snapshot = parseInvoiceCsv(text)
@@ -350,13 +376,7 @@ function App() {
         missingKeys: current.filter(item => item.annotation.status !== 'paid' && !present.has(item.key)).map(item => item.key),
         paidSeenKeys: current.filter(item => item.annotation.status === 'paid' && present.has(item.key)).map(item => item.key),
       }
-      setInvoices(result.invoices)
-      setDemo(false)
-      setImportReview(review)
-      setLoadBlocked(false)
-      setStorageWarning('')
-      const reviewCount = review.missingKeys.length + review.paidSeenKeys.length
-      setToast({ text: `Imported ${result.added} new and updated ${result.updated} invoices.${result.skipped ? ` ${result.skipped} rows skipped.` : ''}${reviewCount ? ` ${reviewCount} need reconciliation.` : ''}`, kind: result.skipped || reviewCount ? 'warn' : 'good' })
+      setPendingImport({ fileName: file.name, result, review, replacingDemo: currentDemo })
     } catch (error) {
       setToast({ text: error instanceof Error ? error.message : 'Unable to read that CSV file.', kind: 'warn' })
     } finally {
@@ -364,11 +384,47 @@ function App() {
     }
   }
 
+  function confirmImport() {
+    if (!pendingImport || loadBlocked || pendingImport.result.added + pendingImport.result.updated === 0) return
+    const { result, review } = pendingImport
+    setInvoices(result.invoices)
+    setDemo(false)
+    setImportReview(review)
+    setPendingImport(null)
+    const reviewCount = review.missingKeys.length + review.paidSeenKeys.length
+    setToast({ text: `Imported ${result.added} new and updated ${result.updated} invoices.${result.skipped ? ` ${result.skipped} rows skipped.` : ''}${reviewCount ? ` ${reviewCount} need reconciliation.` : ''}`, kind: result.issues.length || reviewCount ? 'warn' : 'good' })
+  }
+
+  function downloadCorruptCopy() {
+    if (saved.corruptRaw === undefined) return
+    saveDownload(saved.corruptRaw, `promiseledger-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
+    setRawDownloaded(true)
+  }
+
+  function discardCorruptData() {
+    if (!loadBlocked || !rawDownloaded) return
+    if (!window.confirm('Discard the unreadable browser data and start with an empty workspace? Keep the raw copy you downloaded in case it can be recovered later.')) return
+    try {
+      window.localStorage.removeItem(STORAGE_KEY)
+      setInvoices([])
+      setDemo(false)
+      setImportReview(emptyReview())
+      setLoadBlocked(false)
+      setStorageWarning('')
+      setToast({ text: 'Unreadable browser data discarded. You can now start again.', kind: 'good' })
+    } catch {
+      setStorageWarning('Browser storage could not be cleared. Keep your raw copy and try again in a browser that permits local storage.')
+    }
+  }
+
   async function restoreBackup(file?: File) {
     if (!file) return
     try {
+      if (loadBlocked && !rawDownloaded) throw new Error('Download the unreadable raw data before restoring a backup.')
       const restored = importLedgerJson(await file.text())
-      if (invoices.length && !demo && !window.confirm(`Replace your current ${invoices.length} invoices with ${restored.length} from this backup? Export your current backup first if you may need it.`)) return
+      if ((loadBlocked || (invoices.length && !demo)) && !window.confirm(loadBlocked
+        ? `Replace the unreadable browser data with ${restored.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
+        : `Replace your current ${invoices.length} invoices with ${restored.length} from this backup? Export your current backup first if you may need it.`)) return
       setInvoices(restored)
       setDemo(false)
       setImportReview(emptyReview())
@@ -382,20 +438,20 @@ function App() {
     }
   }
 
-  function addInvoice(details: { customer: string; invoiceNumber: string; amount: string; dueDate: string; issueDate: string; email: string }) {
+  function addInvoice(details: { customer: string; invoiceNumber: string; amount: string; dueDate: string; issueDate: string; email: string }): string | null {
+    if (loadBlocked) return 'Recover or discard unreadable browser data before adding an invoice.'
     const csv = 'Customer,Invoice Number,Invoice Date,Due Date,Amount,Email\n' +
       [details.customer, details.invoiceNumber, details.issueDate, details.dueDate, details.amount, details.email].map(csvCell).join(',')
     const result = parseInvoiceCsv(csv, demo ? [] : invoices)
     if (result.added + result.updated === 0) {
-      setToast({ text: result.issues[0]?.message || 'Please check the invoice details.', kind: 'warn' })
-      return false
+      return result.issues[0]?.message || 'Please check the invoice details.'
     }
+    if (result.updated) return 'An invoice with this customer and number already exists. Open it in the queue to make changes. No data was changed.'
+    if (demo && !window.confirm('Adding this invoice will replace the sample workspace and any edits made to sample invoices. Continue?')) return 'Sample invoices were kept. No data was changed.'
     setInvoices(result.invoices)
     setDemo(false)
-    setLoadBlocked(false)
-    setStorageWarning('')
-    setToast({ text: result.added ? 'Invoice added.' : 'Existing invoice updated.', kind: 'good' })
-    return true
+    setToast({ text: 'Invoice added.', kind: 'good' })
+    return null
   }
 
   function updateInvoice(updated: Invoice) {
@@ -418,7 +474,7 @@ function App() {
   const downloadBackup = () => saveDownload(exportLedgerJson(invoices), `promiseledger-backup-${asOf}.json`, 'application/json')
   const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `promiseledger-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
 
-  if (view === 'home') return <Landing openApp={() => navigate('app')} />
+  if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked} startSample={() => { if (loadBlocked || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
 
   return <div className="app-shell">
     <header className="app-header">
@@ -429,30 +485,39 @@ function App() {
         <div className="app-header-actions">
           <button className="header-link" onClick={() => setShowGuide(true)}><HelpCircle size={17} /> Help</button>
           <button className="header-link" onClick={downloadBackup} disabled={!invoices.length}><ArrowDownToLine size={17} /> Backup</button>
-          <button className="button button-primary button-small" onClick={() => csvInput.current?.click()}><FileUp size={17} /> Import CSV</button>
+          <button className="button button-primary button-small" onClick={() => csvInput.current?.click()} disabled={loadBlocked}><FileUp size={17} /> Import CSV</button>
           <button className="mobile-menu app-menu-toggle" aria-label="More actions" aria-expanded={showMobileMenu} onClick={() => setShowMobileMenu(!showMobileMenu)}><MoreHorizontal size={23} /></button>
         </div>
       </div>
-      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup JSON</button><button onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
+      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup JSON</button><button disabled={loadBlocked} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
     </header>
     <main className="app-main wrap">
       <input ref={csvInput} type="file" accept=".csv,text/csv" className="sr-only" onChange={event => void importCsv(event.target.files?.[0])} aria-label="Import invoice CSV" />
       <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup" />
       <div className="app-title-row">
         <div><span className="kicker">YOUR RECEIVABLES, WITH A PLAN</span><h1>Action board<span className="title-period">.</span></h1><p>Know what is stuck, who is moving it, and when to follow up.</p></div>
-        <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
+        <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
       </div>
 
-      {storageWarning && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span>{saved.corruptRaw && <button onClick={() => saveDownload(saved.corruptRaw!, `promiseledger-raw-data-${asOf}.json`, 'application/json')}>Download raw copy <ArrowDownToLine size={15} /></button>}</div>}
+      {!loadBlocked && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup JSON <ArrowDownToLine size={15} /></button></div>}
+
+      {storageWarning && !loadBlocked && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span></div>}
       {demo && <div className="notice demo"><Sparkles size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
       {reviewKeys.size > 0 && <div className="notice warning review-notice"><CircleAlert size={19} /><span>{reviewMessage} Confirm status in your ledger.</span><button onClick={() => setFilter('review')}>Review {reviewKeys.size} <ArrowRight size={15} /></button><button onClick={() => { setImportReview(emptyReview()); if (filter === 'review') setFilter('all') }}>Mark reviewed</button></div>}
 
-      {!invoices.length ? <div className="empty-workspace">
+      {loadBlocked ? <section className="recovery-panel" aria-labelledby="recovery-title">
+        <div className="recovery-icon"><CircleAlert size={30} /></div>
+        <span className="kicker">DATA RECOVERY</span>
+        <h2 id="recovery-title">Your saved data needs attention.</h2>
+        <p>{storageWarning} The workspace is paused to avoid overwriting it. First download the exact raw data stored in this browser. Then restore a valid JSON backup or explicitly discard the unreadable copy.</p>
+        <div className="recovery-actions"><button className="button button-primary" onClick={downloadCorruptCopy}><ArrowDownToLine size={17} /> {rawDownloaded ? 'Download raw copy again' : '1. Download raw copy'}</button><button className="button button-secondary" disabled={!rawDownloaded} onClick={() => restoreInput.current?.click()}><FileUp size={17} /> 2. Restore JSON backup</button><button className="button button-danger" disabled={!rawDownloaded} onClick={discardCorruptData}>2. Discard and start over</button></div>
+        {!rawDownloaded && <small>Restore and discard unlock after you download the raw copy.</small>}
+      </section> : !invoices.length ? <div className="empty-workspace">
         <div className="empty-art"><FileSpreadsheet size={34} /><span className="empty-spark s1" /><span className="empty-spark s2" /></div>
         <span className="kicker">START WITH AN AGING REPORT</span>
         <h2>Your next move starts here.</h2>
         <p>Import a CSV with customer, invoice number, due date and amount. Or use sample invoices to see how the board works.</p>
-        <div className="empty-actions"><button className="button button-primary" onClick={() => csvInput.current?.click()}><FileUp size={18} /> Import CSV</button><button className="button button-secondary" onClick={() => { setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); setLoadBlocked(false); setStorageWarning('') }}>Explore sample data</button></div>
+        <div className="empty-actions"><button className="button button-primary" onClick={() => csvInput.current?.click()}><FileUp size={18} /> Import CSV</button><button className="button button-secondary" onClick={() => { if (loadBlocked) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()) }}>Explore sample data</button></div>
         <div className="empty-foot"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Download sample CSV <ArrowDownToLine size={15} /></a><span /> <button onClick={() => restoreInput.current?.click()}>Restore a JSON backup <ArrowRight size={15} /></button></div>
       </div> : <>
         <section className="metric-grid" aria-label="Receivables overview">
@@ -482,8 +547,9 @@ function App() {
     </main>
 
     {selected && <InvoiceDrawer key={selected.key} invoice={selected} asOf={asOf} onClose={() => setSelectedKey(null)} onSave={updateInvoice} onDelete={deleteInvoice} onToast={setToast} />}
-    {showAdd && <AddInvoiceModal onClose={() => setShowAdd(false)} onAdd={addInvoice} />}
+    {showAdd && <AddInvoiceModal onClose={() => setShowAdd(false)} onAdd={addInvoice} replacingDemo={demo} />}
     {showGuide && <GuideModal onClose={() => setShowGuide(false)} onRestore={() => { setShowGuide(false); restoreInput.current?.click() }} />}
+    {pendingImport && <ImportPreviewModal pending={pendingImport} onCancel={() => setPendingImport(null)} onConfirm={confirmImport} />}
     {toast && <div className={`toast ${toast.kind || 'good'}`} role="status"><span>{toast.kind === 'warn' ? <CircleAlert size={18} /> : <CheckCircle2 size={18} />}</span>{toast.text}<button onClick={() => setToast(null)} aria-label="Dismiss message"><X size={15} /></button></div>}
   </div>
 }
@@ -521,12 +587,33 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
   </div>
 }
 
-function AddInvoiceModal({ onClose, onAdd }: { onClose: () => void; onAdd: (details: { customer: string; invoiceNumber: string; amount: string; dueDate: string; issueDate: string; email: string }) => boolean }) {
+function ImportPreviewModal({ pending, onCancel, onConfirm }: { pending: PendingImport; onCancel: () => void; onConfirm: () => void }) {
+  const [reviewedIssues, setReviewedIssues] = useState(false)
+  const dialogRef = useDialogFocus<HTMLDivElement>(onCancel)
+  const { result, review } = pending
+  const retained = result.invoices.length - result.added - result.updated
+  const hasValidRows = result.added + result.updated > 0
+  const reviewKeys = new Set([...review.missingKeys, ...review.paidSeenKeys])
+  const reviewInvoices = result.invoices.filter(invoice => reviewKeys.has(invoice.key))
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onCancel() }}>
+    <div ref={dialogRef} className="dialog import-preview" role="dialog" aria-modal="true" aria-labelledby="import-preview-title" aria-describedby="import-preview-description">
+      <div className="dialog-head"><div><span className="drawer-kicker">IMPORT PREVIEW</span><h2 id="import-preview-title">Check this CSV first</h2><p id="import-preview-description" className="import-filename">{pending.fileName}</p></div><button type="button" className="icon-button" onClick={onCancel} aria-label="Cancel import"><X size={20} /></button></div>
+      <p className="import-intro">Nothing has changed yet. {hasValidRows ? pending.replacingDemo ? 'This import will replace the sample workspace and any sample edits.' : 'Matched invoices will receive the CSV balance, dates and email. Your notes stay attached, and invoices absent from this CSV are kept.' : 'No valid invoices were found. Check the issues below and choose another CSV.'}</p>
+      <div className="import-stats" aria-label="Import counts"><div><strong>{result.added}</strong><span>new</span></div><div><strong>{result.updated}</strong><span>updated</span></div><div className={result.skipped ? 'import-stat-alert' : ''}><strong>{result.skipped}</strong><span>skipped</span></div><div><strong>{retained}</strong><span>kept</span></div></div>
+      {result.issues.length > 0 && <section className="import-issues" aria-labelledby="import-issues-title"><h3 id="import-issues-title"><CircleAlert size={17} /> {result.issues.length} CSV {result.issues.length === 1 ? 'issue' : 'issues'}</h3><p>Rows with missing or invalid required values and duplicate invoices will be skipped. Other warnings may mean optional information was not imported. Check every item before continuing.</p><ul>{result.issues.map((issue, index) => <li key={`${issue.row}-${index}`}><strong>Line {issue.row}</strong><span>{issue.message}</span></li>)}</ul><label className="import-ack"><input type="checkbox" checked={reviewedIssues} onChange={event => setReviewedIssues(event.target.checked)} /> I reviewed the CSV issues and accept importing the valid rows only.</label></section>}
+      {reviewInvoices.length > 0 && <section className="import-reconcile" aria-labelledby="import-reconcile-title"><h3 id="import-reconcile-title"><CircleAlert size={17} /> {reviewInvoices.length} invoices need reconciliation</h3><p>These invoices remain in your workspace and will be flagged for review. Confirm their status in your accounting ledger.</p><ul>{reviewInvoices.map(invoice => <li key={invoice.key}>{invoice.customer} · {invoice.invoiceNumber} — {review.missingKeys.includes(invoice.key) ? 'absent from this CSV' : 'marked paid here but present in this CSV'}</li>)}</ul></section>}
+      <div className="dialog-actions"><button type="button" className="button button-quiet" onClick={onCancel}>Cancel</button><button type="button" className="button button-primary" disabled={!hasValidRows || (result.issues.length > 0 && !reviewedIssues)} onClick={onConfirm}><Check size={17} /> Confirm import</button></div>
+    </div>
+  </div>
+}
+
+function AddInvoiceModal({ onClose, onAdd, replacingDemo }: { onClose: () => void; onAdd: (details: { customer: string; invoiceNumber: string; amount: string; dueDate: string; issueDate: string; email: string }) => string | null; replacingDemo: boolean }) {
   const [form, setForm] = useState({ customer: '', invoiceNumber: '', amount: '', dueDate: '', issueDate: '', email: '' })
+  const [error, setError] = useState('')
   const requestClose = () => { if (Object.values(form).some(Boolean) && !window.confirm('Discard your unsaved invoice?')) return; onClose() }
   const dialogRef = useDialogFocus<HTMLFormElement>(requestClose)
-  const set = (key: keyof typeof form, value: string) => setForm(current => ({ ...current, [key]: value }))
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); if (onAdd(form)) onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>Track an open invoice without importing a CSV.</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div><div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div><div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> Add invoice</button></div></form></div>
+  const set = (key: keyof typeof form, value: string) => { setForm(current => ({ ...current, [key]: value })); setError('') }
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div><div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> Add invoice</button></div></form></div>
 }
 
 function GuideModal({ onClose, onRestore }: { onClose: () => void; onRestore: () => void }) {
