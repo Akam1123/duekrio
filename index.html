@@ -7,9 +7,21 @@
     <meta name="description" content="Turn an aging report into an action plan. Track invoice blockers, owners, payment promises, and the next move in a private workspace." />
     <link rel="icon" type="image/svg+xml" href="/promiseledger/favicon.svg" />
     <title>PromiseLedger — Turn overdue invoices into clear next moves</title>
+    <script>
+      if (window.location.protocol === 'file:') {
+        document.documentElement.classList.add('opened-from-file')
+        window.location.replace(new URL('./PromiseLedger-offline.html' + window.location.hash, window.location.href).href)
+      }
+    </script>
+    <style>
+      .local-open-help { display: none; }
+      .opened-from-file .local-open-help { display: block; max-width: 640px; margin: 12vh auto; padding: 32px; font: 16px/1.6 system-ui, sans-serif; color: #102e34; }
+      .local-open-help h1 { font-size: 28px; line-height: 1.2; }
+      .local-open-help a { color: #006c6b; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><main class="local-open-help"><h1>Opening PromiseLedger locally</h1><p>The app should open in the standalone offline file. If it does not, open <a href="./PromiseLedger-offline.html">PromiseLedger-offline.html</a> or <a href="https://akam1123.github.io/promiseledger/">the live app</a>.</p></main></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

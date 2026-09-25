@@ -6,6 +6,8 @@ PromiseLedger helps a 5–30 person team turn an accounts receivable export into
 
 **[Try the live workspace](https://akam1123.github.io/promiseledger/)** · [Read the market thesis](docs/MARKET.md) · [See the first-customer plan](docs/GO_TO_MARKET.md)
 
+**Opening a downloaded copy?** Double-click `index.html`; it opens the self-contained `PromiseLedger-offline.html` beside it. You can also open that offline file directly. Keep both files together if using the redirect. The live and offline copies have separate browser storage, so export a JSON backup if you move work between them.
+
 ![PromiseLedger action board with fictional sample invoices](docs/images/board.png)
 
 ## What you can do
@@ -22,7 +24,7 @@ The included demo and [sample AR CSV](public/sample-ar-aging.csv) use fictional 
 
 ## Run locally
 
-Requires a current Node.js LTS release and npm.
+For development, use a current Node.js LTS release and npm:
 
 ```bash
 npm install
