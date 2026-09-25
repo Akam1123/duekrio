@@ -6,3 +6,8 @@
 /* Shared keyboard focus and motion preferences for content pages. */
 :is(a,button,summary,[tabindex]):focus-visible{outline:3px solid #146f60;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.card:hover{transform:none}}
+.kit-status{display:inline-block;margin-top:24px;padding:10px 15px;border:1px solid #a9d7bb;border-radius:999px;background:#eef8ef;color:#245a47;font-size:14px}
+.kit-status strong{font-weight:800}.kit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:27px 0 42px}.kit-tile{border:1px solid #dae9dd;border-radius:14px;background:#fff;padding:21px 23px}.kit-tile small{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#287b68}.kit-tile h3{margin:10px 0 7px}.kit-tile p{font-size:15px;margin:0}
+.kit-preview-link{display:block}.kit-preview-link h3{font-size:23px;margin:14px 0 7px}
+.callout p a{color:#d5f0dc}
+@media(max-width:700px){.kit-grid{grid-template-columns:1fr}.kit-status{border-radius:13px}}
