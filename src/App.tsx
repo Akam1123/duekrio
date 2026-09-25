@@ -433,10 +433,9 @@ function App() {
       </div>
       {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup JSON</button><button onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
     </header>
-    <input ref={csvInput} type="file" accept=".csv,text/csv" className="sr-only" onChange={event => void importCsv(event.target.files?.[0])} aria-label="Import invoice CSV" />
-    <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup" />
-
     <main className="app-main wrap">
+      <input ref={csvInput} type="file" accept=".csv,text/csv" className="sr-only" onChange={event => void importCsv(event.target.files?.[0])} aria-label="Import invoice CSV" />
+      <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup" />
       <div className="app-title-row">
         <div><span className="kicker">YOUR RECEIVABLES, WITH A PLAN</span><h1>Action board<span className="title-period">.</span></h1><p>Know what is stuck, who is moving it, and when to follow up.</p></div>
         <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
@@ -476,7 +475,7 @@ function App() {
             </tr>)}
           </tbody></table>{rows.length === 0 && <div className="no-results"><Inbox size={28} /><strong>No invoices match this view.</strong><span>Try another filter or search.</span></div>}</div>
         </section>
-        <div className="workspace-footer"><div><LockKeyhole size={15} /> Stored in this browser only. Back up regularly.</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href="https://github.com/Akam1123/promiseledger/issues/new" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
+        <div className="workspace-footer"><div><LockKeyhole size={15} /> Stored in this browser only. Back up regularly.</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href="https://github.com/Akam1123/promiseledger/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
       </>}
     </main>
 
@@ -496,7 +495,7 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
     if (JSON.stringify(draft) !== JSON.stringify(invoice) && !window.confirm('Discard your unsaved invoice changes?')) return
     onClose()
   }
-  const dialogRef = useDialogFocus<HTMLElement>(requestClose)
+  const dialogRef = useDialogFocus<HTMLDivElement>(requestClose)
   const setAnnotation = <K extends keyof InvoiceAnnotation>(key: K, value: InvoiceAnnotation[K]) => setDraft(current => ({ ...current, annotation: { ...current.annotation, [key]: value } }))
   async function copyDraft() {
     try {
@@ -505,7 +504,7 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
     } catch { onToast({ text: 'Copy failed. Select and copy the draft text below.', kind: 'warn' }) }
   }
   return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}>
-    <aside ref={dialogRef} className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div ref={dialogRef} className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
       <div className="drawer-top"><div><span className="drawer-kicker">INVOICE DETAILS</span><h2 id="drawer-title">{draft.invoiceNumber}</h2><p>{draft.customer}</p></div><button className="icon-button" onClick={requestClose} aria-label="Close invoice"><X size={21} /></button></div>
       <div className="drawer-scroll">
         <div className="invoice-summary"><div><small>Amount due</small><strong>{dollars(draft.amount)}</strong></div><div><small>Due date</small><strong>{dateLabel(draft.dueDate)}</strong></div><div><small>Age</small><strong className={info.isOverdue ? 'red-ink' : ''}>{info.isOverdue ? `${info.daysOverdue} days late` : 'On time'}</strong></div></div>
@@ -516,7 +515,7 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
         {draft.annotation.status === 'paid' ? <div className="paid-panel"><CheckCircle2 size={18} /><span>Marked paid in this workspace. Confirm receipt in your accounting ledger. Follow-up drafting is disabled.</span></div> : <div className="draft-panel"><div className="draft-heading"><div><Mail size={18} /><strong>Human-reviewed follow-up</strong></div><button onClick={() => setEmailOpen(!emailOpen)}>{emailOpen ? 'Hide draft' : 'Write draft'} <ArrowRight size={15} /></button></div>{emailOpen && <div className="email-draft"><label>Subject<input readOnly value={email.subject} /></label><label>Message<textarea readOnly rows={9} value={email.body} /></label><div className="draft-actions"><button className="button button-secondary" onClick={() => void copyDraft()}><Copy size={16} /> Copy draft</button>{email.recipient && <a className="button button-quiet" href={`mailto:${encodeURIComponent(email.recipient)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`}>Open email app <ArrowUpRight size={16} /></a>}</div><small>Review the facts, tone, recipient, and invoice record before sending. Nothing is sent automatically.</small></div>}</div>}
       </div>
       <div className="drawer-bottom"><button className="button button-danger" onClick={() => onDelete(draft)}>Delete invoice</button><span className="drawer-bottom-spacer" /><button className="button button-quiet" onClick={requestClose}>Cancel</button><button className="button button-primary" onClick={() => { onSave(draft); onClose() }}><Check size={18} /> Save changes</button></div>
-    </aside>
+    </div>
   </div>
 }
 

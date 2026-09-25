@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a product error using synthetic or redacted data.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please avoid posting real customer names, invoice numbers, emails, or financial details in this public issue.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: Use the included sample CSV or describe a synthetic example.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true

@@ -1,0 +1,39 @@
+name: Product feedback or pilot interest
+description: Tell us where the invoice resolution workflow helps or breaks down. Do not post customer or financial data.
+title: "Feedback: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying PromiseLedger. Please use fictional or redacted examples. GitHub issues are public.
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your role
+      options:
+        - Business owner
+        - Finance or operations lead
+        - Bookkeeper or accountant
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: current-workflow
+    attributes:
+      label: How do you currently handle invoices that need more than a reminder?
+      placeholder: Describe the tools and handoffs, without customer names or amounts.
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: What was useful or frustrating in PromiseLedger?
+      placeholder: A concrete step you tried is most helpful.
+    validations:
+      required: true
+  - type: checkboxes
+    id: contact
+    attributes:
+      label: Optional follow-up
+      options:
+        - label: I am open to a follow-up through this GitHub issue about a pilot or interview.
