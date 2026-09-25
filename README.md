@@ -68,7 +68,7 @@ See [the product brief](docs/PRODUCT.md) for scope and planned next steps.
 
 The current public URL is a prototype. A dedicated-host build with root-path links, Cloudflare privacy copy, and strict security headers is ready for an exact claimed hostname; see [hosting status and verification](docs/HOSTING.md). The [security audit](docs/SECURITY_AUDIT.md), [legal/policy risk review](docs/LEGAL_RISK_REVIEW.md), [incident response checklist](docs/INCIDENT_RESPONSE.md), [design QA](docs/DESIGN_QA.md), and [brand check](docs/BRAND.md) record what has been checked and what remains unresolved. [Billing design](docs/BILLING.md) is a planning document; no payment account or live checkout is connected. None is a guarantee of legal immunity or a claim that the new hostname is already live.
 
-GitHub private vulnerability reporting, Dependabot alerts/security updates, and CodeQL default setup are enabled for this repository. The initial CodeQL scan found two findings on the earlier deployed commit; fixes are in the current working tree and need a new scan after deployment. See the security audit for verification and remaining limits.
+GitHub private vulnerability reporting, Dependabot alerts/security updates, and CodeQL default setup are enabled for this repository. The CodeQL scan of commit `bbc209f` passed and marked both findings from the preceding commit as fixed. This is a point-in-time scan, not a guarantee against future vulnerabilities; see the security audit for verification and remaining limits.
 
 ## Launch preparation
 
