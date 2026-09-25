@@ -128,7 +128,7 @@ async function deriveBackupKey(passphrase: string, salt: Uint8Array<ArrayBuffer>
   )
 }
 
-/** Encrypts only the downloaded JSON file; the live browser workspace remains plaintext in localStorage. */
+/** Encrypts the downloaded JSON file separately from the optional locked browser workspace. */
 export async function encryptWorkspaceJson(snapshot: WorkspaceSnapshot, passphrase: string): Promise<string> {
   if (Array.from(passphrase).length < MIN_BACKUP_PASSPHRASE_LENGTH) {
     throw new Error(`Use a unique backup passphrase of at least ${MIN_BACKUP_PASSPHRASE_LENGTH} characters.`)
@@ -173,12 +173,19 @@ export function serializeWorkspace(snapshot: WorkspaceSnapshot): string {
   return JSON.stringify(snapshot)
 }
 
-export type SaveResult = { kind: 'saved'; raw: string } | { kind: 'conflict' }
+/** Compare workspaces after the same schema validation used by encrypted storage. */
+export function canonicalWorkspace(snapshot: WorkspaceSnapshot): string {
+  return serializeWorkspace(importWorkspaceJson(exportWorkspaceJson(snapshot)))
+}
+
+export type SaveResult = { kind: 'saved'; raw: string } | { kind: 'conflict' } | { kind: 'failed' }
 
 /** A stale tab cannot replace a newer workspace snapshot. Call under a Web Lock. */
 export function saveWorkspaceIfCurrent(storage: Pick<Storage, 'getItem' | 'setItem'>, expectedRaw: string | null, snapshot: WorkspaceSnapshot): SaveResult {
   if (storage.getItem(WORKSPACE_STORAGE_KEY) !== expectedRaw) return { kind: 'conflict' }
   const raw = serializeWorkspace(snapshot)
   storage.setItem(WORKSPACE_STORAGE_KEY, raw)
+  const observed = storage.getItem(WORKSPACE_STORAGE_KEY)
+  if (observed !== raw) return observed === expectedRaw ? { kind: 'failed' } : { kind: 'conflict' }
   return { kind: 'saved', raw }
 }

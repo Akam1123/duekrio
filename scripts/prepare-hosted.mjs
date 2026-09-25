@@ -3,8 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { remainingLegacyProjectUrls, rewriteLegacyHtmlUrls } from './hosted-urls.mjs'
 
-// The GitHub Pages demo uses a project path. A dedicated static host serves
-// the same app from /, with its own origin and browser-storage boundary.
+// The source targets the Duekrio root. This build also supports a separate
+// compatibility deployment on the older Duenara Cloudflare origin.
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distRoot = path.join(projectRoot, 'dist-hosted')
 const suppliedOrigin = process.env.PUBLIC_ORIGIN
@@ -14,6 +14,7 @@ if (url.protocol !== 'https:' || url.username || url.password || url.search || u
   throw new Error('PUBLIC_ORIGIN must be a real HTTPS origin with a trailing / and no path, query, or credentials.')
 }
 const publicOrigin = `${url.origin}/`
+const sourceOrigin = 'https://duekrio.pages.dev/'
 
 const assertOne = (source, pattern, label, replacement) => {
   const matches = source.match(pattern)
@@ -31,7 +32,8 @@ async function htmlFiles(directory) {
   return files
 }
 
-const privacyNew = '<p>This website is served by Cloudflare Pages. Cloudflare may process request information, such as an IP address, to deliver and protect the site; see its <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">privacy policy</a>. The public source code is available on <a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">GitHub</a>. The application has no server that receives imported invoices or notes.</p>'
+const privacyNew = '<p>This website is served by Cloudflare Pages. Cloudflare may process request information, such as an IP address, to deliver and protect the site; see its <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">privacy policy</a>. The public source code is available on <a href="https://github.com/Akam1123/duekrio" target="_blank" rel="noreferrer">GitHub</a>. The application has no server that receives imported invoices or notes.</p>'
+const oldCloudflareMigrationNote = '<div class="note" id="legacy-host-warning"><strong>Moving to the new address.</strong><p>This is the older Duenara Cloudflare address. Browser storage saved here stays on this origin and does not appear at <a href="https://duekrio.pages.dev/" target="_blank" rel="noopener noreferrer">duekrio.pages.dev</a> automatically. Open this workspace, unlock it if necessary, and download a JSON backup through <strong>Backup options</strong>. Then open the <a href="https://duekrio.pages.dev/#/app" target="_blank" rel="noopener noreferrer">new workspace</a>, choose <strong>Restore backup</strong>, and verify the invoices before clearing the old copy. Keep any backup passphrase separately; Duekrio cannot recover it.</p></div>'
 
 const files = await htmlFiles(distRoot)
 if (files.length < 6) throw new Error(`Hosted build is unexpectedly incomplete (${files.length} HTML files).`)
@@ -44,11 +46,22 @@ for (const file of files) {
     html = assertOne(html, /<div id="root">[\s\S]*?<\/div>/g, 'offline-only root content', '<div id="root"></div>')
   }
   if (path.relative(distRoot, file).replaceAll('\\', '/') === 'privacy/index.html') {
-    html = assertOne(html, /<p>The website is currently served by GitHub Pages\.[\s\S]*?<\/p>/g, 'host disclosure', privacyNew)
-    html = assertOne(html, /\s*<div class="note" id="legacy-host-warning">[\s\S]*?<\/div>/g, 'legacy-host warning', '')
+    if (!html.includes(privacyNew)) throw new Error('Expected Cloudflare Pages host disclosure on privacy page.')
+    const migrationNote = /\s*<div class="note" id="legacy-host-warning">[\s\S]*?<\/div>/g
+    if (url.hostname === 'duenara.pages.dev') {
+      html = assertOne(html, migrationNote, 'legacy-host warning', oldCloudflareMigrationNote)
+    } else if (html.match(migrationNote)?.length !== 1) {
+      throw new Error('Expected one migration note on privacy page.')
+    }
   }
-  html = rewriteLegacyHtmlUrls(html, publicOrigin).replace(/(["'])\/promiseledger\//g, '$1/')
-  if (remainingLegacyProjectUrls(html).length > 0 || /(["'])\/promiseledger\//.test(html)) throw new Error(`Old deployment path remains in ${file}`)
+  const headEnd = html.indexOf('</head>')
+  if (headEnd < 0) throw new Error(`Missing head in ${file}`)
+  const head = rewriteLegacyHtmlUrls(html.slice(0, headEnd), publicOrigin).replaceAll(sourceOrigin, publicOrigin)
+  html = (head + html.slice(headEnd)).replace(/(["'])\/promiseledger\//g, '$1/')
+  // The privacy migration note intentionally links to the old GitHub origin so
+  // visitors can export existing browser data before switching hosts.
+  const withoutMigrationNote = html.replace(/<div class="note" id="legacy-host-warning">[\s\S]*?<\/div>/g, '')
+  if (remainingLegacyProjectUrls(withoutMigrationNote).length > 0 || /(["'])\/promiseledger\//.test(html)) throw new Error(`Old deployment path remains in ${file}`)
   if (/<script\b(?![^>]*\bsrc=)[^>]*>/i.test(html) || /<style\b/i.test(html) || /\son[a-z]+\s*=/i.test(html)) {
     throw new Error(`Inline executable content remains in ${file}; the strict CSP would block it.`)
   }

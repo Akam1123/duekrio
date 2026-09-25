@@ -35,6 +35,7 @@ import {
 import {
   WORKSPACE_STORAGE_KEY,
   MIN_BACKUP_PASSPHRASE_LENGTH,
+  canonicalWorkspace,
   decryptWorkspaceJson,
   emptyReview,
   encryptWorkspaceJson,
@@ -45,7 +46,15 @@ import {
   serializeWorkspace,
   validateEncryptedWorkspaceJson,
 } from './lib/workspace'
-import type { ImportReview, WorkspaceSnapshot } from './lib/workspace'
+import type { ImportReview, SaveResult, WorkspaceSnapshot } from './lib/workspace'
+import {
+  LOCKED_WORKSPACE_STORAGE_KEY,
+  LockedWorkspaceSession,
+  MIN_LOCK_PASSPHRASE_LENGTH,
+  validateLockedWorkspaceEnvelope,
+  unlockLockedWorkspace,
+} from './lib/lockedWorkspace'
+import { saveLockedWorkspaceIfCurrent } from './lib/lockedWorkspaceStorage'
 import type { CsvImportResult, Invoice, InvoiceAnnotation } from './lib/types'
 
 type View = 'home' | 'app'
@@ -59,9 +68,11 @@ const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024
 const MAX_ENCRYPTED_BACKUP_FILE_BYTES = 16 * 1024 * 1024
 const sampleCsvUrl = (window as Window & { __DUENARA_SAMPLE_CSV_URL__?: string }).__DUENARA_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
-const contentBaseUrl = window.location.protocol === 'file:' ? 'https://duenara.pages.dev/' : import.meta.env.BASE_URL
+const contentBaseUrl = window.location.protocol === 'file:' ? 'https://duekrio.pages.dev/' : import.meta.env.BASE_URL
 const sharedPreviewHost = window.location.hostname === 'akam1123.github.io'
-const dedicatedSiteUrl = 'https://duenara.pages.dev/'
+const legacyCloudflareHost = window.location.hostname === 'duenara.pages.dev'
+const legacyAddress = sharedPreviewHost || legacyCloudflareHost
+const dedicatedSiteUrl = 'https://duekrio.pages.dev/'
 const dedicatedWorkspaceUrl = `${dedicatedSiteUrl}#/app`
 const today = () => {
   const now = new Date()
@@ -131,6 +142,13 @@ function saveDownload(content: string, filename: string, mime: string) {
   anchor.download = filename
   anchor.click()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+async function fileMatchesExactText(file: File, expected: string): Promise<boolean> {
+  const expectedBytes = new TextEncoder().encode(expected)
+  if (file.size !== expectedBytes.byteLength) return false
+  const selectedBytes = new Uint8Array(await file.arrayBuffer())
+  return selectedBytes.every((byte, index) => byte === expectedBytes[index])
 }
 
 function csvCell(value: string | number) {
@@ -204,18 +222,18 @@ function useRoute(): [View, (view: View) => void] {
 }
 
 function Brand({ onClick }: { onClick: () => void }) {
-  return <button className="brand" onClick={onClick} aria-label="Duenara home">
+  return <button className="brand" onClick={onClick} aria-label="Duekrio home">
     <span className="brand-mark"><span /></span>
-    <span>Due<span className="brand-soft">nara</span></span>
+    <span>Due<span className="brand-soft">krio</span></span>
   </button>
 }
 
 function LegacyDataCaution() {
   if (!sharedPreviewHost) return null
-  return <p className="preview-data-caution"><CircleAlert size={16} /><span>This old address shares browser storage with other projects on its origin. The live workspace here is not encrypted. Use <a href={dedicatedSiteUrl} target="_blank" rel="noopener noreferrer">duenara.pages.dev</a> for new work. To move saved work, download a JSON backup here and restore it there. CSV and plain JSON exports remain readable; a passphrase-encrypted JSON backup is available.</span></p>
+  return <p className="preview-data-caution"><CircleAlert size={16} /><span>This old GitHub address shares browser storage with other projects on its origin. Browser storage is readable unless you explicitly enable local encryption. Use <a href={dedicatedSiteUrl} target="_blank" rel="noopener noreferrer">duekrio.pages.dev</a> for new work. To move saved work, download a JSON backup here and restore it there. CSV and plain JSON exports remain readable; a passphrase-encrypted JSON backup is available.</span></p>
 }
 
-function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => void; startSample: () => void; sampleAvailable: boolean }) {
+function Landing({ openApp, startSample, sampleAvailable, lockedOpen, onLock }: { openApp: () => void; startSample: () => void; sampleAvailable: boolean; lockedOpen: boolean; onLock: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return <div className="site-shell">
     <header className="site-nav wrap">
@@ -225,26 +243,29 @@ function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => voi
         <a href="#who-it-is-for" onClick={() => setMenuOpen(false)}>Who it is for</a>
         <a href={`${contentBaseUrl}resources/`}>Resources</a>
         <a href={`${contentBaseUrl}privacy/`}>Privacy</a>
+        {lockedOpen && <button className="nav-lock" onClick={onLock}><LockKeyhole size={16} /> Lock workspace</button>}
         <button className="nav-cta" onClick={openApp}>Open workspace <ArrowRight size={16} /></button>
       </nav>
       <button className="mobile-menu" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22} /> : <Menu size={22} />}</button>
     </header>
 
-    {sharedPreviewHost && <aside className="legacy-migration wrap" aria-label="Duenara's new address"><div><strong>Duenara has moved to its own address.</strong><p>Work saved on this old address will not appear there automatically. If you have work here, open this workspace, choose Backup options and download a JSON file. Then open the new workspace and choose Restore backup. Check your work there before clearing data here.</p></div><div className="legacy-migration-actions"><button type="button" onClick={openApp}>Open old workspace</button><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duenara.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
+    {lockedOpen && <aside className="lock-session-banner wrap" role="status"><span>Your encrypted workspace is unlocked in this tab until you lock it or reload.</span><button type="button" onClick={onLock}><LockKeyhole size={16} /> Lock workspace</button></aside>}
+
+    {legacyAddress && <aside className="legacy-migration wrap" aria-label="Duekrio's current address"><div><strong>Duekrio is now at duekrio.pages.dev.</strong><p>Browser data saved on this older address stays here. Open this workspace and download a JSON backup, unlocking it first if needed. Restore it on the new address and verify your invoices before clearing the older copy.</p></div><div className="legacy-migration-actions"><button type="button" onClick={openApp}>Open old workspace</button><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duekrio.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
 
     <main>
       <section className="hero wrap">
         <div className="hero-copy">
           <div className="eyebrow"><span className="eyebrow-dot" /> A clearer way to work your receivables</div>
           <h1>Every unpaid invoice has a reason. <em>Give it a next move.</em></h1>
-          <p className="hero-intro">An aging report tells you what is overdue. Duenara helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
+          <p className="hero-intro">An aging report tells you what is overdue. Duekrio helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
           <div className="hero-actions">
             <button className="button button-primary button-large" onClick={openApp}>Open free workspace <ArrowRight size={19} /></button>
             {sampleAvailable ? <button className="text-link text-link-button" onClick={startSample}>Explore sample data <ArrowRight size={17} /></button> : <a className="text-link" href="#how-it-works">See how it works <ArrowDownToLine size={17} /></a>}
           </div>
           <div className="hero-trust"><ShieldCheck size={17} /><span>No account · No bank connection · Browser-only storage. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span></div>
         </div>
-        <div className="hero-visual" aria-label="Illustration of the Duenara action board">
+        <div className="hero-visual" aria-label="Illustration of the Duekrio action board">
           <div className="visual-glow" />
           <div className="mock-window">
             <div className="mock-top"><span className="mock-icon">d</span><span>Action queue</span><span className="mock-pill">Illustrative data</span></div>
@@ -280,29 +301,62 @@ function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => voi
         <div className="resource-grid"><a href={`${contentBaseUrl}resources/weekly-ar-review-checklist/`} className="resource-card"><span>WORKFLOW GUIDE</span><h3>Weekly AR review checklist</h3><p>From a current aging report to one owner and one next action for every exception.</p><b>Read the checklist <ArrowRight size={17} /></b></a><a href={`${contentBaseUrl}resources/overdue-invoice-email-templates/`} className="resource-card"><span>COMMUNICATION GUIDE</span><h3>Overdue invoice email templates</h3><p>Copyable messages to edit and review for a status check, a missing document, and a payment promise.</p><b>See the templates <ArrowRight size={17} /></b></a></div>
       </section>
 
-      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>Duenara is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does Duenara send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
+      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>Duekrio is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does Duekrio send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
     </main>
 
-    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href={`${contentBaseUrl}terms/`}>Use terms</a><a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
+    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href={`${contentBaseUrl}terms/`}>Use terms</a><a href="https://github.com/Akam1123/duekrio" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
   </div>
 }
 
-function loadSaved(): { invoices: Invoice[]; demo: boolean; review: ImportReview; raw: string | null; warning?: string; corruptRaw?: string } {
+type LoadedWorkspace = {
+  invoices: Invoice[]
+  demo: boolean
+  review: ImportReview
+  raw: string | null
+  warning?: string
+  corruptRaw?: string
+  lockedRaw?: string
+  lockedReadError?: boolean
+  legacyRaw?: string | null
+}
+
+function loadSaved(): LoadedWorkspace {
+  const empty = { invoices: [] as Invoice[], demo: false, review: emptyReview(), raw: null }
+  try {
+    const lockedRaw = window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY)
+    if (lockedRaw !== null) {
+      let legacyRaw: string | null | undefined
+      try { legacyRaw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY) } catch { /* The encrypted copy still takes priority. */ }
+      return { ...empty, lockedRaw, legacyRaw }
+    }
+  } catch {
+    return { ...empty, lockedReadError: true, warning: 'Encrypted browser storage could not be read. Reload after browser storage becomes available.' }
+  }
   let raw: string | null = null
   try {
     raw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
     if (raw === null) return { invoices: [], demo: false, review: emptyReview(), raw }
-    const parsed = JSON.parse(raw) as { invoices?: unknown; demo?: unknown; review?: Partial<ImportReview> }
-    const invoices = importLedgerJson(JSON.stringify({ format: 'duenara', version: 1, invoices: parsed.invoices }))
-    const review = parsed.review && Array.isArray(parsed.review.missingKeys) && Array.isArray(parsed.review.paidSeenKeys)
-      ? { missingKeys: parsed.review.missingKeys.filter((key): key is string => typeof key === 'string'), paidSeenKeys: parsed.review.paidSeenKeys.filter((key): key is string => typeof key === 'string') }
-      : emptyReview()
-    return { invoices, demo: parsed.demo === true, review, raw }
+    return { ...parseStoredPlainWorkspace(raw), raw }
   } catch {
     return raw === null
       ? { invoices: [], demo: false, review: emptyReview(), raw, warning: 'Browser storage could not be read. Changes may not be saved; export a JSON backup before leaving.' }
       : { invoices: [], demo: false, review: emptyReview(), raw, warning: 'Saved browser data could not be loaded.', corruptRaw: raw }
   }
+}
+
+function parseStoredPlainWorkspace(raw: string): WorkspaceSnapshot {
+  const parsed = JSON.parse(raw) as { invoices?: unknown; demo?: unknown; review?: Partial<ImportReview> }
+  const invoices = importLedgerJson(JSON.stringify({ format: 'duenara', version: 1, invoices: parsed.invoices }))
+  const review = parsed.review && Array.isArray(parsed.review.missingKeys) && Array.isArray(parsed.review.paidSeenKeys)
+    ? { missingKeys: parsed.review.missingKeys.filter((key): key is string => typeof key === 'string'), paidSeenKeys: parsed.review.paidSeenKeys.filter((key): key is string => typeof key === 'string') }
+    : emptyReview()
+  return { invoices, demo: parsed.demo === true, review }
+}
+
+function withWorkspaceLock<T>(key: string, action: () => Promise<T>): Promise<T> {
+  // Web Locks awaits the async callback; its DOM TypeScript overload retains a
+  // nested Promise type even though native Promises flatten at runtime.
+  return navigator.locks?.request ? navigator.locks.request(key, action) as unknown as Promise<T> : action()
 }
 
 function App() {
@@ -315,7 +369,19 @@ function App() {
   const [storageConflict, setStorageConflict] = useState(false)
   const [conflictBackupDownloaded, setConflictBackupDownloaded] = useState(false)
   const [rawDownloaded, setRawDownloaded] = useState(false)
+  const [rawPrepared, setRawPrepared] = useState(false)
+  const [rawVerificationError, setRawVerificationError] = useState('')
+  const [conflictBackupPrepared, setConflictBackupPrepared] = useState(false)
+  const [conflictBackupVerificationError, setConflictBackupVerificationError] = useState('')
   const [storageWarning, setStorageWarning] = useState(saved.warning || '')
+  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved')
+  const [lockedMode, setLockedMode] = useState(saved.lockedRaw !== undefined || saved.lockedReadError === true)
+  const [lockedReady, setLockedReady] = useState(false)
+  const [lockedRaw, setLockedRaw] = useState<string | null>(saved.lockedRaw ?? null)
+  const [lockedReadError, setLockedReadError] = useState(saved.lockedReadError === true)
+  const [legacyCopyPresent, setLegacyCopyPresent] = useState(saved.legacyRaw != null)
+  const [showLockSetup, setShowLockSetup] = useState(false)
+  const [showLegacyCleanup, setShowLegacyCleanup] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<QueueFilter>('all')
@@ -328,13 +394,35 @@ function App() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const csvInput = useRef<HTMLInputElement>(null)
   const restoreInput = useRef<HTMLInputElement>(null)
+  const rawVerifyInput = useRef<HTMLInputElement>(null)
+  const conflictVerifyInput = useRef<HTMLInputElement>(null)
   const invoicesRef = useRef(invoices)
   const demoRef = useRef(demo)
   const lastSavedRawRef = useRef(saved.raw)
-  const lastSubmittedRef = useRef(serializeWorkspace({ invoices: saved.invoices, demo: saved.demo, review: saved.review }))
+  const legacyRawRef = useRef(saved.legacyRaw ?? saved.raw)
+  const lockedRawRef = useRef(saved.lockedRaw ?? null)
+  const lockedSessionRef = useRef<LockedWorkspaceSession | null>(null)
+  const lockedModeRef = useRef(lockedMode)
+  const lockedReadyRef = useRef(lockedReady)
+  const lastSavedSnapshotRef = useRef(serializeWorkspace({ invoices: saved.invoices, demo: saved.demo, review: saved.review }))
+  const latestSnapshotRef = useRef<WorkspaceSnapshot>({ invoices, demo, review: importReview })
+  const saveInFlightRef = useRef(false)
   const conflictRef = useRef(false)
+  const conflictBackupDownloadedRef = useRef(conflictBackupDownloaded)
+  const loadBlockedRef = useRef(loadBlocked)
+  const rawPreparedExpectedRef = useRef<string | null>(null)
+  const rawPreparedKeyRef = useRef<string | null>(null)
+  const conflictBackupExpectedRef = useRef<string | null>(null)
+  const conflictBackupSnapshotRef = useRef<string | null>(null)
   invoicesRef.current = invoices
   demoRef.current = demo
+  latestSnapshotRef.current = { invoices, demo, review: importReview }
+  conflictBackupDownloadedRef.current = conflictBackupDownloaded
+  loadBlockedRef.current = loadBlocked
+  lockedModeRef.current = lockedMode
+  lockedReadyRef.current = lockedReady
+  const hasUnsavedChanges = (!lockedMode || lockedReady) && serializeWorkspace(latestSnapshotRef.current) !== lastSavedSnapshotRef.current
+  const displayedSaveState = hasUnsavedChanges ? saveState === 'failed' ? 'failed' : 'saving' : 'saved'
   const asOf = today()
 
   function markStorageConflict() {
@@ -344,38 +432,357 @@ function App() {
     if (window.location.hash !== '#/app') window.location.hash = '/app'
   }
 
-  useEffect(() => {
-    if (loadBlocked || conflictRef.current) return
-    const snapshot = { invoices, demo, review: importReview }
+  async function createLockedMode(passphrase: string): Promise<void> {
+    if (lockedModeRef.current || loadBlockedRef.current || conflictRef.current) throw new Error('Resolve the current workspace warning before locking it.')
+    if (saveInFlightRef.current) throw new Error('A browser save is still running. Wait for it to finish and try again.')
+    const snapshot = latestSnapshotRef.current
     const serialized = serializeWorkspace(snapshot)
-    if (serialized === lastSubmittedRef.current) return
-    lastSubmittedRef.current = serialized
-    const save = () => {
-      if (conflictRef.current) return
-      try {
-        const result = saveWorkspaceIfCurrent(window.localStorage, lastSavedRawRef.current, snapshot)
-        if (result.kind === 'conflict') { markStorageConflict(); return }
-        lastSavedRawRef.current = result.raw
+    if (serialized !== lastSavedSnapshotRef.current) throw new Error('Save the current changes or download a JSON backup before locking this workspace.')
+    const session = await LockedWorkspaceSession.create(passphrase)
+    let adopted = false
+    try {
+      await withWorkspaceLock(WORKSPACE_STORAGE_KEY, () => withWorkspaceLock(LOCKED_WORKSPACE_STORAGE_KEY, async () => {
+        if (lockedModeRef.current || conflictRef.current || serializeWorkspace(latestSnapshotRef.current) !== serialized) {
+          throw new Error('The workspace changed while it was being locked. Try again with the latest copy.')
+        }
+        const oldRaw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
+        if (oldRaw !== lastSavedRawRef.current) {
+          markStorageConflict()
+          throw new Error('Another tab changed the old workspace. Back up this tab before trying again.')
+        }
+        const result = await saveLockedWorkspaceIfCurrent(window.localStorage, null, snapshot, session)
+        if (result.kind === 'conflict') {
+          markStorageConflict()
+          throw new Error('Another tab created an encrypted workspace. Back up this tab and load that copy.')
+        }
+        if (result.kind === 'failed') throw new Error('Browser storage did not retain the encrypted copy. Your old workspace remains available; try again or export a backup.')
+        if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== oldRaw) {
+          if (window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) === result.raw) {
+            window.localStorage.removeItem(LOCKED_WORKSPACE_STORAGE_KEY)
+          }
+          markStorageConflict()
+          throw new Error('The old workspace changed during migration. Back up this tab before loading the latest version.')
+        }
+        lockedSessionRef.current = session
+        lockedRawRef.current = result.raw
+        legacyRawRef.current = oldRaw
+        lastSavedSnapshotRef.current = serialized
+        lockedModeRef.current = true
+        lockedReadyRef.current = true
+        setLockedRaw(result.raw)
+        setLockedMode(true)
+        setLockedReady(true)
+        setLegacyCopyPresent(oldRaw !== null)
+        setShowLockSetup(false)
         setStorageWarning('')
-      } catch { setStorageWarning('Browser storage is unavailable or full. Export a JSON backup before leaving this page.') }
+        setSaveState('saved')
+        setToast({ text: 'Encrypted workspace saved and verified in this browser. Keep the passphrase and an encrypted backup.', kind: 'good' })
+        adopted = true
+      }))
+    } finally {
+      if (!adopted) session.close()
     }
-    // Serializes read-check-write across tabs in browsers that support Web Locks.
-    // The storage-event and preflight checks also catch stale writes in older browsers.
-    if (navigator.locks?.request) {
-      void navigator.locks.request(WORKSPACE_STORAGE_KEY, save).catch(() => {
-        setStorageWarning('Browser storage is unavailable. Export a JSON backup before leaving this page.')
+  }
+
+  async function unlockWorkspace(passphrase: string): Promise<void> {
+    if (!lockedModeRef.current || lockedReadyRef.current) return
+    const raw = window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY)
+    if (!raw) throw new Error('Encrypted browser data is missing. Keep the raw copy or restore a backup before making changes.')
+    const { session, snapshot } = await unlockLockedWorkspace(raw, passphrase)
+    try {
+      if (window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) !== raw) {
+        throw new Error('Another tab changed the encrypted workspace while it was unlocking. Try again with the latest copy.')
+      }
+      lockedSessionRef.current = session
+      lockedRawRef.current = raw
+      lastSavedSnapshotRef.current = serializeWorkspace(snapshot)
+      lockedReadyRef.current = true
+      setLockedRaw(raw)
+      setInvoices(snapshot.invoices)
+      setDemo(snapshot.demo)
+      setImportReview(snapshot.review)
+      setLockedReady(true)
+      setLockedReadError(false)
+      setStorageWarning('')
+      setSaveState('saved')
+    } catch (error) {
+      session.close()
+      throw error
+    }
+  }
+
+  function lockWorkspaceNow(): void {
+    if (!lockedModeRef.current || !lockedReadyRef.current) return
+    if (saveInFlightRef.current || serializeWorkspace(latestSnapshotRef.current) !== lastSavedSnapshotRef.current || conflictRef.current) {
+      setToast({ text: 'Save the current changes or download a JSON backup before locking this tab.', kind: 'warn' })
+      return
+    }
+    lockedReadyRef.current = false
+    lockedSessionRef.current?.close()
+    lockedSessionRef.current = null
+    setLockedReady(false)
+    setRawDownloaded(false)
+    setInvoices([])
+    setDemo(false)
+    setImportReview(emptyReview())
+    setSelectedKey(null)
+    setPendingImport(null)
+    setBackupRequest(null)
+    setPendingEncryptedRestore(null)
+    setShowLegacyCleanup(false)
+    setShowAdd(false)
+    setShowGuide(false)
+    setToast(null)
+    // A React state reset leaves the initial loaded snapshot and saved refs in
+    // this JavaScript heap. A fresh document drops those decrypted references.
+    window.location.hash = '/app'
+    window.location.reload()
+  }
+
+  function downloadLockedRaw(): void {
+    const raw = lockedRawRef.current
+    if (!raw) return
+    saveDownload(raw, `duekrio-locked-raw-${asOf}.json`, 'application/json')
+    rawPreparedExpectedRef.current = raw
+    rawPreparedKeyRef.current = LOCKED_WORKSPACE_STORAGE_KEY
+    setRawPrepared(true)
+    setRawDownloaded(false)
+    setRawVerificationError('')
+  }
+
+  async function verifyRawDownload(file?: File): Promise<void> {
+    if (!file || !rawPrepared) return
+    const expected = rawPreparedExpectedRef.current
+    const key = rawPreparedKeyRef.current
+    if (expected === null || !key) throw new Error('Download the exact raw copy again before verifying it.')
+    if (!(await fileMatchesExactText(file, expected))) {
+      throw new Error('The selected file does not match the downloaded raw copy byte for byte. Keep the browser data and download it again.')
+    }
+    if (!(loadBlockedRef.current && conflictRef.current)) {
+      await withWorkspaceLock(key, async () => {
+        if (window.localStorage.getItem(key) !== expected) {
+          throw new Error('Browser storage changed after that download. Download the latest raw copy and try again.')
+        }
       })
-    } else save()
-  }, [invoices, demo, importReview, loadBlocked])
+    }
+    setRawVerificationError('')
+    setRawDownloaded(true)
+    if (loadBlockedRef.current && conflictRef.current) setConflictBackupDownloaded(true)
+  }
+
+  async function handleRawVerification(file?: File): Promise<void> {
+    try { await verifyRawDownload(file) } catch (error) {
+      setRawDownloaded(false)
+      setConflictBackupDownloaded(false)
+      setRawVerificationError(error instanceof Error ? error.message : 'The raw file could not be verified. Download it again.')
+    }
+  }
+
+  async function replaceLockedFromRecovery(snapshot: WorkspaceSnapshot, passphrase: string, sourceRaw?: string): Promise<void> {
+    if (!lockedModeRef.current || lockedReadyRef.current) throw new Error('Recovery is available only while the encrypted workspace is locked.')
+    if (lockedRawRef.current !== null && !rawDownloaded) throw new Error('Download the exact encrypted raw copy before replacing it.')
+    if (lockedRawRef.current !== null && rawPreparedExpectedRef.current !== lockedRawRef.current) throw new Error('Verify a raw file matching the current encrypted copy before replacing it.')
+    if (!window.confirm('Replace the current encrypted browser copy with this recovery source? Keep the raw copy you downloaded and any older backup.')) return
+    const expectedLocked = lockedRawRef.current
+    const session = await LockedWorkspaceSession.create(passphrase)
+    let adopted = false
+    try {
+      const commit = () => withWorkspaceLock(LOCKED_WORKSPACE_STORAGE_KEY, async () => {
+        if (lockedReadyRef.current || lockedRawRef.current !== expectedLocked) throw new Error('The encrypted workspace changed during recovery. No data was replaced.')
+        if (sourceRaw !== undefined && window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== sourceRaw) {
+          throw new Error('The older browser copy changed during recovery. Try again with its latest version.')
+        }
+        const result = await saveLockedWorkspaceIfCurrent(window.localStorage, expectedLocked, snapshot, session)
+        if (result.kind === 'conflict') throw new Error('Another tab changed the encrypted workspace. No recovery data was written.')
+        if (result.kind === 'failed') throw new Error('Browser storage did not retain the recovered encrypted copy. The raw copy and older browser copy were not removed.')
+        if (sourceRaw !== undefined && window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== sourceRaw) {
+          if (window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) === result.raw) {
+            if (expectedLocked === null) window.localStorage.removeItem(LOCKED_WORKSPACE_STORAGE_KEY)
+            else window.localStorage.setItem(LOCKED_WORKSPACE_STORAGE_KEY, expectedLocked)
+            if (window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) !== expectedLocked) {
+              throw new Error('The older browser copy changed and the prior encrypted copy could not be restored. Keep both raw copies.')
+            }
+          }
+          throw new Error('The older browser copy changed during recovery. Keep both copies and try again.')
+        }
+        lockedSessionRef.current = session
+        lockedRawRef.current = result.raw
+        lastSavedSnapshotRef.current = serializeWorkspace(snapshot)
+        lockedReadyRef.current = true
+        setLockedRaw(result.raw)
+        setInvoices(snapshot.invoices)
+        setDemo(snapshot.demo)
+        setImportReview(snapshot.review)
+        setLockedReady(true)
+        setLockedReadError(false)
+        setRawDownloaded(false)
+        setSaveState('saved')
+        setStorageWarning('')
+        setToast({ text: 'Recovered encrypted workspace saved and verified. Keep a fresh encrypted backup.', kind: 'good' })
+        adopted = true
+      })
+      if (sourceRaw !== undefined) await withWorkspaceLock(WORKSPACE_STORAGE_KEY, commit)
+      else await commit()
+    } finally {
+      if (!adopted) session.close()
+    }
+  }
+
+  async function recoverLockedFromLegacy(passphrase: string): Promise<void> {
+    const raw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
+    if (raw === null) throw new Error('No older browser copy is available. Choose a JSON backup instead.')
+    const snapshot = parseStoredPlainWorkspace(raw)
+    await replaceLockedFromRecovery(snapshot, passphrase, raw)
+  }
+
+  async function recoverLockedFromBackup(file: File, backupPassphrase: string, passphrase: string): Promise<void> {
+    if (file.size > MAX_ENCRYPTED_BACKUP_FILE_BYTES) throw new Error('This backup is over 16 MB. No data was changed.')
+    const json = await file.text()
+    const snapshot = isEncryptedWorkspaceJson(json)
+      ? await decryptWorkspaceJson(json, backupPassphrase)
+      : file.size <= MAX_JSON_BACKUP_BYTES ? importWorkspaceJson(json) : (() => { throw new Error('Plain JSON backup is over 10 MB. No data was changed.') })()
+    await replaceLockedFromRecovery(snapshot, passphrase)
+  }
+
+  async function downloadEncryptedLegacyBackup(passphrase: string): Promise<void> {
+    if (!lockedModeRef.current || !lockedReadyRef.current || !legacyCopyPresent) throw new Error('No older readable copy is available for this step.')
+    const raw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
+    if (raw === null || raw !== legacyRawRef.current) throw new Error('The older browser copy changed. Reload and review it before backing it up.')
+    const snapshot = parseStoredPlainWorkspace(raw)
+    const encrypted = await encryptWorkspaceJson(snapshot, passphrase)
+    saveDownload(encrypted, `duekrio-older-browser-copy-${asOf}.encrypted.json`, 'application/json')
+  }
+
+  async function removeLegacyCopyAfterBackup(file: File, passphrase: string): Promise<boolean> {
+    if (!lockedModeRef.current || !lockedReadyRef.current || !legacyCopyPresent || conflictRef.current || saveInFlightRef.current ||
+        serializeWorkspace(latestSnapshotRef.current) !== lastSavedSnapshotRef.current) {
+      throw new Error('Finish saving the encrypted workspace before removing the older copy.')
+    }
+    if (file.size > MAX_ENCRYPTED_BACKUP_FILE_BYTES) throw new Error('The selected backup is over 16 MB. Nothing was removed.')
+    const json = await file.text()
+    if (!isEncryptedWorkspaceJson(json)) throw new Error('Select the encrypted JSON backup of the older browser copy. Nothing was removed.')
+    const restored = await decryptWorkspaceJson(json, passphrase)
+    const expectedLegacy = legacyRawRef.current
+    if (expectedLegacy === null || canonicalWorkspace(restored) !== canonicalWorkspace(parseStoredPlainWorkspace(expectedLegacy))) {
+      throw new Error('This backup does not match the older browser copy. Nothing was removed.')
+    }
+    if (!window.confirm('The encrypted backup matches the older copy. Remove only that readable browser copy now? Keep the downloaded backup and your workspace passphrase.')) return false
+
+    await withWorkspaceLock(WORKSPACE_STORAGE_KEY, () => withWorkspaceLock(LOCKED_WORKSPACE_STORAGE_KEY, async () => {
+      const session = lockedSessionRef.current
+      if (!session || !lockedReadyRef.current || conflictRef.current) throw new Error('The encrypted workspace is not ready. Nothing was removed.')
+      const currentLocked = window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY)
+      if (currentLocked === null || currentLocked !== lockedRawRef.current) {
+        markStorageConflict()
+        throw new Error('Another tab changed the encrypted workspace. Nothing was removed.')
+      }
+      const verifiedCurrent = await session.open(currentLocked)
+      if (canonicalWorkspace(verifiedCurrent) !== canonicalWorkspace(latestSnapshotRef.current)) {
+        throw new Error('The encrypted workspace did not match this tab. Nothing was removed.')
+      }
+      const currentLegacy = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
+      if (currentLegacy !== expectedLegacy || canonicalWorkspace(restored) !== canonicalWorkspace(parseStoredPlainWorkspace(currentLegacy))) {
+        throw new Error('The older browser copy changed. Nothing was removed.')
+      }
+      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY)
+      if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== null) throw new Error('The older readable copy could not be removed. Try again.')
+      legacyRawRef.current = null
+      setLegacyCopyPresent(false)
+      setShowLegacyCleanup(false)
+      setToast({ text: 'Older readable browser copy removed after encrypted backup verification. The encrypted workspace remains available.', kind: 'good' })
+    }))
+    return true
+  }
+
+  function persistCurrentWorkspace() {
+    if (loadBlockedRef.current || conflictRef.current || saveInFlightRef.current || (lockedModeRef.current && !lockedReadyRef.current)) return
+    if (serializeWorkspace(latestSnapshotRef.current) === lastSavedSnapshotRef.current) {
+      if (saveState === 'failed') {
+        setSaveState('saved')
+        setStorageWarning('')
+      }
+      return
+    }
+    const modeAtStart = lockedModeRef.current
+    saveInFlightRef.current = true
+    setSaveState('saving')
+    let failed = false
+    const markSaveFailed = (message: string) => {
+      failed = true
+      setSaveState('failed')
+      setStorageWarning(message)
+    }
+    const save = async () => {
+      if (loadBlockedRef.current || conflictRef.current || lockedModeRef.current !== modeAtStart || (modeAtStart && !lockedReadyRef.current)) return
+      const snapshot = latestSnapshotRef.current
+      try {
+        let result: SaveResult
+        if (modeAtStart) {
+          const session = lockedSessionRef.current
+          if (!session) throw new Error('The encrypted workspace is locked.')
+          result = await saveLockedWorkspaceIfCurrent(window.localStorage, lockedRawRef.current, snapshot, session)
+        } else {
+          if (window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) !== null) { markStorageConflict(); return }
+          result = saveWorkspaceIfCurrent(window.localStorage, lastSavedRawRef.current, snapshot)
+        }
+        if (lockedModeRef.current !== modeAtStart || conflictRef.current) return
+        if (result.kind === 'conflict') { markStorageConflict(); return }
+        if (result.kind === 'failed') {
+          markSaveFailed(`Changes in this tab were not saved. ${modeAtStart ? 'Encrypted ' : ''}browser storage did not retain the write. Retry saving or download a JSON backup before leaving.`)
+          return
+        }
+        if (modeAtStart) {
+          lockedRawRef.current = result.raw
+          setLockedRaw(result.raw)
+        } else lastSavedRawRef.current = result.raw
+        lastSavedSnapshotRef.current = serializeWorkspace(snapshot)
+        setStorageWarning('')
+      } catch {
+        markSaveFailed(`Changes in this tab were not saved. ${modeAtStart ? 'Encrypted ' : ''}browser storage may be unavailable or full. Retry saving or download a JSON backup before leaving.`)
+      }
+    }
+    // A single in-flight request coalesces edits and saves the latest snapshot.
+    // Web Locks serialize read-check-write across tabs; the preflight check also
+    // refuses stale writes in browsers without Web Locks.
+    const request = Promise.resolve().then(() => withWorkspaceLock(modeAtStart ? LOCKED_WORKSPACE_STORAGE_KEY : WORKSPACE_STORAGE_KEY, save))
+    void request.catch(() => {
+      markSaveFailed('Changes in this tab were not saved. Browser storage is unavailable. Retry saving or download a JSON backup before leaving.')
+    }).finally(() => {
+      saveInFlightRef.current = false
+      if (failed || loadBlockedRef.current || conflictRef.current || lockedModeRef.current !== modeAtStart || (modeAtStart && !lockedReadyRef.current)) return
+      if (serializeWorkspace(latestSnapshotRef.current) !== lastSavedSnapshotRef.current) persistCurrentWorkspace()
+      else setSaveState('saved')
+    })
+  }
+
+  useEffect(() => {
+    persistCurrentWorkspace()
+  }, [invoices, demo, importReview, loadBlocked, lockedMode, lockedReady])
 
   useEffect(() => {
     const checkLatest = () => {
       try {
-        if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) markStorageConflict()
+        const currentLocked = window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY)
+        if (lockedModeRef.current) {
+          setLegacyCopyPresent(window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== null)
+          if (!lockedReadyRef.current) {
+            if (currentLocked !== lockedRawRef.current) {
+              lockedRawRef.current = currentLocked
+              setLockedRaw(currentLocked)
+              setRawDownloaded(false)
+              setRawPrepared(false)
+              rawPreparedExpectedRef.current = null
+              setRawVerificationError('The encrypted browser copy changed. Download and verify the latest raw file before recovery.')
+            }
+            setLockedReadError(false)
+          } else if (currentLocked !== lockedRawRef.current) markStorageConflict()
+        } else if (currentLocked !== null || window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) {
+          markStorageConflict()
+        }
       } catch { /* The storage warning is handled by the save path. */ }
     }
     const onStorage = (event: StorageEvent) => {
-      if ((event.key === WORKSPACE_STORAGE_KEY || event.key === null) && event.newValue !== lastSavedRawRef.current) markStorageConflict()
+      if (event.key === WORKSPACE_STORAGE_KEY || event.key === LOCKED_WORKSPACE_STORAGE_KEY || event.key === null) checkLatest()
     }
     const onVisible = () => { if (document.visibilityState === 'visible') checkLatest() }
     window.addEventListener('storage', onStorage)
@@ -395,15 +802,27 @@ function App() {
   }, [toast])
 
   useEffect(() => {
-    if (storageConflict) setConflictBackupDownloaded(false)
+    if (storageConflict) {
+      setConflictBackupDownloaded(false)
+      setConflictBackupPrepared(false)
+      conflictBackupExpectedRef.current = null
+      conflictBackupSnapshotRef.current = null
+    }
   }, [invoices, demo, importReview, storageConflict])
 
   useEffect(() => {
-    if (!storageConflict || conflictBackupDownloaded) return
-    const warnBeforeLeaving = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      const hasUnbackedConflict = conflictRef.current && !conflictBackupDownloadedRef.current
+      const hasUnsavedChanges = !conflictRef.current &&
+        (!lockedModeRef.current || lockedReadyRef.current) &&
+        serializeWorkspace(latestSnapshotRef.current) !== lastSavedSnapshotRef.current
+      if (!hasUnbackedConflict && !hasUnsavedChanges) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
     window.addEventListener('beforeunload', warnBeforeLeaving)
     return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
-  }, [storageConflict, conflictBackupDownloaded])
+  }, [])
 
   const active = useMemo(() => invoices.filter(item => item.annotation.status !== 'paid'), [invoices])
   const derived = useMemo(() => prioritizeInvoices(invoices, asOf), [invoices, asOf])
@@ -477,31 +896,45 @@ function App() {
     setImportReview(review)
     setPendingImport(null)
     const reviewCount = review.missingKeys.length + review.paidSeenKeys.length
-    setToast({ text: `Imported ${result.added} new and updated ${result.updated} invoices.${result.skipped ? ` ${result.skipped} rows skipped.` : ''}${reviewCount ? ` ${reviewCount} need reconciliation.` : ''}`, kind: result.issues.length || reviewCount ? 'warn' : 'good' })
+    setToast({ text: `Loaded ${result.added} new and updated ${result.updated} invoices in this tab; saving now.${result.skipped ? ` ${result.skipped} rows skipped.` : ''}${reviewCount ? ` ${reviewCount} need reconciliation.` : ''}`, kind: result.issues.length || reviewCount ? 'warn' : 'good' })
   }
 
   function downloadCorruptCopy() {
     if (saved.corruptRaw === undefined) return
-    saveDownload(saved.corruptRaw, `duenara-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
-    setRawDownloaded(true)
+    saveDownload(saved.corruptRaw, `duekrio-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
+    rawPreparedExpectedRef.current = saved.corruptRaw
+    rawPreparedKeyRef.current = WORKSPACE_STORAGE_KEY
+    setRawPrepared(true)
+    setRawDownloaded(false)
+    setRawVerificationError('')
   }
 
-  function discardCorruptData() {
-    if (!loadBlocked || storageConflict || !rawDownloaded) return
+  async function discardCorruptData() {
+    if (!loadBlocked || storageConflict || !rawDownloaded || rawPreparedExpectedRef.current !== saved.corruptRaw) return
     if (!window.confirm('Discard the unreadable browser data and start with an empty workspace? Keep the raw copy you downloaded in case it can be recovered later.')) return
     try {
-      if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) { markStorageConflict(); return }
-      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY)
-      lastSavedRawRef.current = null
-      lastSubmittedRef.current = ''
-      setInvoices([])
-      setDemo(false)
-      setImportReview(emptyReview())
-      setLoadBlocked(false)
-      setStorageWarning('')
-      setToast({ text: 'Unreadable browser data discarded. You can now start again.', kind: 'good' })
+      await withWorkspaceLock(WORKSPACE_STORAGE_KEY, () => withWorkspaceLock(LOCKED_WORKSPACE_STORAGE_KEY, async () => {
+        if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== saved.corruptRaw ||
+            window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) !== null) {
+          markStorageConflict()
+          throw new Error('Browser storage changed. The unreadable copy was kept; review the latest workspace before trying again.')
+        }
+        window.localStorage.removeItem(WORKSPACE_STORAGE_KEY)
+        if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== null) throw new Error('The unreadable browser entry could not be removed.')
+        lastSavedRawRef.current = null
+        lastSavedSnapshotRef.current = ''
+        rawPreparedExpectedRef.current = null
+        setRawPrepared(false)
+        setRawDownloaded(false)
+        setInvoices([])
+        setDemo(false)
+        setImportReview(emptyReview())
+        setLoadBlocked(false)
+        setStorageWarning('')
+        setToast({ text: 'Unreadable browser data discarded. You can now start again.', kind: 'good' })
+      }))
     } catch {
-      setStorageWarning('Browser storage could not be cleared. Keep your raw copy and try again in a browser that permits local storage.')
+      setStorageWarning('Browser storage could not be cleared or changed during the operation. Keep your verified raw file and review the latest copy before trying again.')
     }
   }
 
@@ -510,14 +943,19 @@ function App() {
     if ((loadBlocked || (invoices.length && !demo)) && !window.confirm(loadBlocked
       ? `Replace the unreadable browser data with ${restored.invoices.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
       : `Replace your current ${invoices.length} invoices with ${restored.invoices.length} from this backup? Export your current backup first if you may need it.`)) return
-    if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) { markStorageConflict(); throw new Error('Another tab changed this workspace. No data was changed.') }
-    lastSubmittedRef.current = ''
+    const activeKey = lockedModeRef.current ? LOCKED_WORKSPACE_STORAGE_KEY : WORKSPACE_STORAGE_KEY
+    const expectedRaw = lockedModeRef.current ? lockedRawRef.current : lastSavedRawRef.current
+    if (window.localStorage.getItem(activeKey) !== expectedRaw || (!lockedModeRef.current && window.localStorage.getItem(LOCKED_WORKSPACE_STORAGE_KEY) !== null)) {
+      markStorageConflict()
+      throw new Error('Another tab changed this workspace. No data was changed.')
+    }
+    lastSavedSnapshotRef.current = ''
     setInvoices(restored.invoices)
     setDemo(restored.demo)
     setImportReview(restored.review)
     setLoadBlocked(false)
     setStorageWarning('')
-    setToast({ text: `Restored ${restored.invoices.length} invoices from backup.`, kind: 'good' })
+    setToast({ text: `Loaded ${restored.invoices.length} invoices from backup in this tab; saving now.`, kind: 'good' })
   }
 
   async function restoreBackup(file?: File) {
@@ -553,13 +991,13 @@ function App() {
     if (demo && !window.confirm('Adding this invoice will replace the sample workspace and any edits made to sample invoices. Continue?')) return 'Sample invoices were kept. No data was changed.'
     setInvoices(result.invoices)
     setDemo(false)
-    setToast(storageConflict ? { text: 'Invoice kept in this tab only. Download a JSON backup before loading the saved version.', kind: 'warn' } : { text: 'Invoice added.', kind: 'good' })
+    setToast(storageConflict ? { text: 'Invoice kept in this tab only. Download a JSON backup before loading the saved version.', kind: 'warn' } : { text: 'Invoice added in this tab; saving now.', kind: 'good' })
     return null
   }
 
   function updateInvoice(updated: Invoice) {
     setInvoices(current => current.map(item => item.key === updated.key ? updated : item))
-    setToast(storageConflict ? { text: 'Invoice kept in this tab only. Download a JSON backup before loading the saved version.', kind: 'warn' } : { text: 'Invoice updated.', kind: 'good' })
+    setToast(storageConflict ? { text: 'Invoice kept in this tab only. Download a JSON backup before loading the saved version.', kind: 'warn' } : { text: 'Invoice updated in this tab; saving now.', kind: 'good' })
   }
 
   function deleteInvoice(invoice: Invoice) {
@@ -571,44 +1009,99 @@ function App() {
       paidSeenKeys: current.paidSeenKeys.filter(key => key !== invoice.key),
     }))
     setSelectedKey(null)
-    setToast({ text: 'Invoice deleted from this browser.', kind: 'good' })
+    setToast({ text: 'Invoice removed from this tab; saving now.', kind: 'good' })
     return true
   }
 
   const downloadBackup = () => setBackupRequest('normal')
   const backupSnapshot = (): WorkspaceSnapshot => ({ invoices, demo, review: importReview })
-  function finishBackupRequest() {
-    if (backupRequest === 'conflict') setConflictBackupDownloaded(true)
+  function finishBackupRequest(content: string) {
+    if (backupRequest === 'conflict') {
+      conflictBackupExpectedRef.current = content
+      conflictBackupSnapshotRef.current = serializeWorkspace(backupSnapshot())
+      setConflictBackupPrepared(true)
+      setConflictBackupDownloaded(false)
+      setConflictBackupVerificationError('')
+    }
     setBackupRequest(null)
   }
   function downloadPlainBackup() {
-    saveDownload(exportWorkspaceJson(backupSnapshot()), `duenara-backup-${asOf}.json`, 'application/json')
-    finishBackupRequest()
+    const content = exportWorkspaceJson(backupSnapshot())
+    saveDownload(content, `duekrio-backup-${asOf}.json`, 'application/json')
+    finishBackupRequest(content)
     setToast({ text: 'Plain JSON backup downloaded. Protect this readable file.', kind: 'warn' })
   }
   async function downloadEncryptedBackup(passphrase: string) {
     const encrypted = await encryptWorkspaceJson(backupSnapshot(), passphrase)
-    saveDownload(encrypted, `duenara-backup-${asOf}.encrypted.json`, 'application/json')
-    finishBackupRequest()
+    saveDownload(encrypted, `duekrio-backup-${asOf}.encrypted.json`, 'application/json')
+    finishBackupRequest(encrypted)
     setToast({ text: 'Encrypted JSON backup downloaded. Keep the passphrase separately; it cannot be recovered.', kind: 'good' })
   }
-  const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `duenara-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
+  const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `duekrio-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
 
   function downloadConflictBackup() {
+    setConflictBackupDownloaded(false)
+    setConflictBackupVerificationError('')
     if (saved.corruptRaw !== undefined && loadBlocked) {
       downloadCorruptCopy()
-      setConflictBackupDownloaded(true)
     } else setBackupRequest('conflict')
   }
 
-  if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked && !storageConflict} startSample={() => { if (loadBlocked || storageConflict || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
+  async function verifyConflictBackup(file?: File): Promise<void> {
+    if (!file || !conflictBackupPrepared || !conflictRef.current) return
+    const expected = conflictBackupExpectedRef.current
+    const snapshot = conflictBackupSnapshotRef.current
+    if (expected === null || snapshot === null || serializeWorkspace(latestSnapshotRef.current) !== snapshot) {
+      throw new Error('This tab changed after the backup was created. Download and verify a fresh copy.')
+    }
+    if (!(await fileMatchesExactText(file, expected))) {
+      throw new Error('The selected file does not match this tab’s downloaded backup byte for byte. Download it again.')
+    }
+    if (serializeWorkspace(latestSnapshotRef.current) !== snapshot) {
+      throw new Error('This tab changed during verification. Download and verify a fresh copy.')
+    }
+    setConflictBackupVerificationError('')
+    setConflictBackupDownloaded(true)
+  }
+
+  async function handleConflictBackupVerification(file?: File): Promise<void> {
+    try { await verifyConflictBackup(file) } catch (error) {
+      setConflictBackupDownloaded(false)
+      setConflictBackupVerificationError(error instanceof Error ? error.message : 'The selected backup could not be verified. Download it again.')
+    }
+  }
+
+  function reloadAfterConflictBackup(): void {
+    if (!conflictRef.current || !conflictBackupDownloadedRef.current) return
+    if (loadBlockedRef.current) {
+      if (rawPreparedExpectedRef.current !== saved.corruptRaw) return
+    } else if (serializeWorkspace(latestSnapshotRef.current) !== conflictBackupSnapshotRef.current) {
+      setConflictBackupDownloaded(false)
+      setConflictBackupVerificationError('This tab changed after verification. Download and verify a fresh copy.')
+      return
+    }
+    window.location.reload()
+  }
+
+  if (view === 'home') return <Landing openApp={() => navigate('app')} lockedOpen={lockedMode && lockedReady} onLock={lockWorkspaceNow} sampleAvailable={!lockedMode && !invoices.length && !loadBlocked && !storageConflict} startSample={() => { if (lockedMode || loadBlocked || storageConflict || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
+
+  if (lockedMode && !lockedReady) {
+    let issue = lockedReadError ? 'Encrypted browser storage could not be read. Check browser storage settings, then reload.' : ''
+    if (!issue && !lockedRaw) issue = 'The encrypted workspace is missing from browser storage. Do not clear any remaining site data.'
+    if (!issue && lockedRaw) {
+      try { validateLockedWorkspaceEnvelope(lockedRaw) } catch (error) {
+        issue = error instanceof Error ? error.message : 'Encrypted browser data is damaged.'
+      }
+    }
+    return <LockedWorkspaceGate issue={issue} rawAvailable={Boolean(lockedRaw)} rawPrepared={rawPrepared} rawDownloaded={rawDownloaded} rawVerificationError={rawVerificationError} legacyCopyPresent={legacyCopyPresent} onUnlock={unlockWorkspace} onDownloadRaw={downloadLockedRaw} onVerifyRaw={handleRawVerification} onRecoverLegacy={recoverLockedFromLegacy} onRecoverBackup={recoverLockedFromBackup} />
+  }
 
   const migrationCopy = loadBlocked
     ? 'Saved data here could not be read. Follow the recovery steps below and keep the raw copy. Move only a valid JSON backup to the new address.'
     : storageConflict
       ? 'Another tab changed this workspace. Follow the recovery steps below and download this tab’s copy before moving to the new address.'
       : invoices.length
-        ? 'This browser keeps data for the two addresses separately. Download a JSON backup here, then open the new workspace and choose Restore backup. Check the restored invoices before clearing data here. An encrypted backup protects the downloaded file; live browser storage remains unencrypted.'
+        ? `This browser keeps data for the two addresses separately. Download a JSON backup here, then restore it at duekrio.pages.dev and verify the invoices before clearing the older copy. ${lockedMode ? 'This workspace is encrypted locally while locked; plain JSON and CSV downloads are still readable.' : 'Local browser storage is readable until you enable workspace encryption.'}`
         : 'No invoices are loaded here. Open the new address to start, or restore an existing JSON backup there. Data from this address does not transfer automatically.'
 
   return <div className="app-shell">
@@ -616,29 +1109,34 @@ function App() {
       <div className="app-header-inner wrap">
         <Brand onClick={() => navigate('home')} />
         <span className="header-divider" />
-        <span className="workspace-label">Workspace <span className="workspace-dot" /> <b>Local</b></span>
+        <span className="workspace-label">Workspace <span className="workspace-dot" /> <b>{lockedMode ? 'Encrypted · unlocked' : 'Local'}</b></span>
         <div className="app-header-actions">
+          {lockedMode && <button className="header-link" onClick={lockWorkspaceNow}><LockKeyhole size={17} /> Lock workspace</button>}
           <button className="header-link" onClick={() => setShowGuide(true)}><HelpCircle size={17} /> Help</button>
           <button className="header-link" onClick={downloadBackup} disabled={!invoices.length}><ArrowDownToLine size={17} /> Backup</button>
           <button className="button button-primary button-small" onClick={() => csvInput.current?.click()} disabled={loadBlocked || storageConflict}><FileUp size={17} /> Import CSV</button>
           <button className="mobile-menu app-menu-toggle" aria-label="More actions" aria-expanded={showMobileMenu} onClick={() => setShowMobileMenu(!showMobileMenu)}><MoreHorizontal size={23} /></button>
         </div>
       </div>
-      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup options</button><button disabled={loadBlocked || storageConflict} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
+      {showMobileMenu && <div className="app-mobile-actions">{lockedMode && <button onClick={() => { lockWorkspaceNow(); setShowMobileMenu(false) }}>Lock workspace</button>}<button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup options</button><button disabled={loadBlocked || storageConflict} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
     </header>
     <main className="app-main wrap">
       <input ref={csvInput} type="file" accept=".csv,text/csv" className="sr-only" onChange={event => void importCsv(event.target.files?.[0])} aria-label="Import invoice CSV" />
       <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup, encrypted or plain" />
+      <input ref={rawVerifyInput} type="file" accept=".json,.txt,application/json,text/plain" className="sr-only" onChange={event => { void handleRawVerification(event.target.files?.[0]); event.target.value = '' }} aria-label="Choose downloaded raw browser copy for byte verification" />
+      <input ref={conflictVerifyInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => { void handleConflictBackupVerification(event.target.files?.[0]); event.target.value = '' }} aria-label="Choose downloaded tab backup for byte verification" />
       <div className="app-title-row">
         <div><span className="kicker">YOUR RECEIVABLES, WITH A PLAN</span><h1>Action board<span className="title-period">.</span></h1><p>Know what is stuck, who is moving it, and when to follow up.</p></div>
         <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked || storageConflict}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
       </div>
 
-      {sharedPreviewHost && <aside className="legacy-migration" aria-label="Duenara's new address"><div><strong>Duenara has moved to its own address.</strong><p>{migrationCopy}</p></div><div className="legacy-migration-actions">{!loadBlocked && !storageConflict && invoices.length > 0 && <button type="button" onClick={downloadBackup}>Backup options</button>}<a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duenara.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
+      {legacyAddress && <aside className="legacy-migration" aria-label="Duekrio's current address"><div><strong>Duekrio is now at duekrio.pages.dev.</strong><p>{migrationCopy}</p></div><div className="legacy-migration-actions">{!loadBlocked && !storageConflict && invoices.length > 0 && <button type="button" onClick={downloadBackup}>Backup options</button>}<a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duekrio.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
 
-      {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved without encryption in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup options <ArrowDownToLine size={15} /></button></div>}
+      {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span role="status">{displayedSaveState === 'failed' ? 'Changes are not saved in this browser.' : displayedSaveState === 'saving' ? 'Saving changes in this browser…' : storageWarning ? 'Browser storage could not be verified.' : lockedMode ? 'Current workspace saved encrypted in this browser.' : 'Saved without encryption in this browser only.'} {lockedMode && legacyCopyPresent ? 'An older readable copy remains in browser storage and is not protected by this lock. ' : ''}There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span>{lockedMode ? <button onClick={lockWorkspaceNow}><LockKeyhole size={15} /> Lock now</button> : <button onClick={() => setShowLockSetup(true)}><LockKeyhole size={15} /> Encrypt workspace</button>}<button onClick={downloadBackup} disabled={!invoices.length}>Backup options <ArrowDownToLine size={15} /></button></div>}
 
-      {storageWarning && !loadBlocked && !storageConflict && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span></div>}
+      {lockedMode && legacyCopyPresent && !storageConflict && <div className="notice warning legacy-cleanup-notice" role="alert"><CircleAlert size={19} /><span>An older readable browser copy remains on this device. Back it up and verify the encrypted file before removing only that old copy.</span><button type="button" disabled={displayedSaveState !== 'saved'} onClick={() => setShowLegacyCleanup(true)}>Protect and remove old copy <ArrowRight size={15} /></button></div>}
+
+      {storageWarning && !loadBlocked && !storageConflict && <div className="notice warning" role="alert"><CircleAlert size={19} /><span>{storageWarning}</span>{displayedSaveState === 'failed' && <button type="button" onClick={persistCurrentWorkspace}>Retry saving <ArrowRight size={15} /></button>}</div>}
       {demo && !storageConflict && <div className="notice demo"><FileSpreadsheet size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
       {reviewKeys.size > 0 && !storageConflict && <div className="notice warning review-notice"><CircleAlert size={19} /><span>{reviewMessage} Confirm status in your ledger.</span><button onClick={() => setFilter('review')}>Review {reviewKeys.size} <ArrowRight size={15} /></button><button onClick={() => { setImportReview(emptyReview()); if (filter === 'review') setFilter('all') }}>Mark reviewed</button></div>}
 
@@ -647,15 +1145,17 @@ function App() {
         <span className="kicker">WORKSPACE CHANGED IN ANOTHER TAB</span>
         <h2 id="conflict-title">This tab stopped saving.</h2>
         <p>{loadBlocked ? 'Another tab changed the browser workspace while this tab was recovering unreadable data. Download the original raw copy from this tab before loading the latest saved version.' : 'Another tab changed the browser workspace. The copy in this tab remains here, including edits you made before this warning. Download a backup before loading the latest saved version. You can then review or restore it as needed.'}</p>
-        <div className="recovery-actions"><button className="button button-primary" onClick={downloadConflictBackup}><ArrowDownToLine size={17} /> {conflictBackupDownloaded ? 'Download this tab again' : loadBlocked ? '1. Download original raw copy' : '1. Back up this tab'}</button><button className="button button-secondary" disabled={!conflictBackupDownloaded} onClick={() => window.location.reload()}><ArrowRight size={17} /> 2. Load latest saved version</button></div>
-        {!conflictBackupDownloaded && <small>Loading the saved version unlocks after you download this tab's copy.</small>}
+        <div className="recovery-actions"><button className="button button-primary" onClick={downloadConflictBackup}><ArrowDownToLine size={17} /> 1. {loadBlocked ? 'Download original raw copy' : 'Back up this tab'}</button>{(loadBlocked ? rawPrepared : conflictBackupPrepared) && <button className="button button-secondary" onClick={() => (loadBlocked ? rawVerifyInput : conflictVerifyInput).current?.click()}><FileUp size={17} /> 2. Select downloaded file to verify</button>}<button className="button button-secondary" disabled={!conflictBackupDownloaded} onClick={reloadAfterConflictBackup}><ArrowRight size={17} /> 3. Load latest saved version</button></div>
+        {(loadBlocked ? rawVerificationError : conflictBackupVerificationError) && <p className="form-error" role="alert">{loadBlocked ? rawVerificationError : conflictBackupVerificationError}</p>}
+        {!conflictBackupDownloaded && <small>Select the file you downloaded so its exact bytes can be checked before this tab is replaced.</small>}
       </section> : loadBlocked ? <section className="recovery-panel" aria-labelledby="recovery-title">
         <div className="recovery-icon"><CircleAlert size={30} /></div>
         <span className="kicker">DATA RECOVERY</span>
         <h2 id="recovery-title">Your saved data needs attention.</h2>
         <p>{storageWarning} The workspace is paused to avoid overwriting it. First download the exact raw data stored in this browser. Then restore a valid JSON backup or explicitly discard the unreadable copy.</p>
-        <div className="recovery-actions"><button className="button button-primary" onClick={downloadCorruptCopy}><ArrowDownToLine size={17} /> {rawDownloaded ? 'Download raw copy again' : '1. Download raw copy'}</button><button className="button button-secondary" disabled={!rawDownloaded} onClick={() => restoreInput.current?.click()}><FileUp size={17} /> 2. Restore JSON backup</button><button className="button button-danger" disabled={!rawDownloaded} onClick={discardCorruptData}>2. Discard and start over</button></div>
-        {!rawDownloaded && <small>Restore and discard unlock after you download the raw copy.</small>}
+        <div className="recovery-actions"><button className="button button-primary" onClick={downloadCorruptCopy}><ArrowDownToLine size={17} /> 1. Download raw copy</button>{rawPrepared && <button className="button button-secondary" onClick={() => rawVerifyInput.current?.click()}><FileUp size={17} /> 2. Select downloaded file to verify</button>}<button className="button button-secondary" disabled={!rawDownloaded} onClick={() => restoreInput.current?.click()}><FileUp size={17} /> 3. Restore JSON backup</button><button className="button button-danger" disabled={!rawDownloaded} onClick={() => void discardCorruptData()}>3. Discard and start over</button></div>
+        {rawVerificationError && <p className="form-error" role="alert">{rawVerificationError}</p>}
+        {!rawDownloaded && <small>Restore and discard unlock only after the selected raw file matches the browser copy byte for byte.</small>}
       </section> : !invoices.length ? <div className="empty-workspace">
         <div className="empty-art"><FileSpreadsheet size={34} /><span className="empty-spark s1" /><span className="empty-spark s2" /></div>
         <span className="kicker">START WITH AN AGING REPORT</span>
@@ -686,14 +1186,16 @@ function App() {
             </tr>)}
           </tbody></table>{rows.length === 0 && <div className="no-results"><Inbox size={28} /><strong>No invoices match this view.</strong><span>Try another filter or search.</span></div>}</div>
         </section>
-        <div className="workspace-footer"><div><LockKeyhole size={15} /> Stored in this browser only. Back up regularly.</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href={`${contentBaseUrl}terms/`}>Use terms</a><span>·</span><a href="https://github.com/Akam1123/promiseledger/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
+        <div className="workspace-footer"><div><LockKeyhole size={15} /> {lockedMode ? 'Encrypted local copy. Lock this tab after use and back up regularly.' : 'Stored in this browser only. Back up regularly.'}</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href={`${contentBaseUrl}terms/`}>Use terms</a><span>·</span><a href="https://github.com/Akam1123/duekrio/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
       </>}
     </main>
 
     {selected && <InvoiceDrawer key={selected.key} invoice={selected} asOf={asOf} storageConflict={storageConflict} onClose={() => setSelectedKey(null)} onSave={updateInvoice} onDelete={deleteInvoice} onToast={setToast} />}
     {showAdd && <AddInvoiceModal onClose={() => setShowAdd(false)} onAdd={addInvoice} replacingDemo={demo} storageConflict={storageConflict} />}
-    {showGuide && <GuideModal onClose={() => setShowGuide(false)} onRestore={() => { setShowGuide(false); restoreInput.current?.click() }} />}
-    {backupRequest && <BackupModal onClose={() => setBackupRequest(null)} onPlain={downloadPlainBackup} onEncrypted={downloadEncryptedBackup} />}
+    {showGuide && <GuideModal locked={lockedMode} legacyCopyPresent={legacyCopyPresent} onClose={() => setShowGuide(false)} onRestore={() => { setShowGuide(false); restoreInput.current?.click() }} />}
+    {backupRequest && <BackupModal locked={lockedMode} legacyCopyPresent={legacyCopyPresent} onClose={() => setBackupRequest(null)} onPlain={downloadPlainBackup} onEncrypted={downloadEncryptedBackup} />}
+    {showLockSetup && <LockSetupModal legacyCopyPresent={lastSavedRawRef.current !== null} onClose={() => setShowLockSetup(false)} onCreate={createLockedMode} />}
+    {showLegacyCleanup && <LegacyCleanupModal onClose={() => setShowLegacyCleanup(false)} onDownload={downloadEncryptedLegacyBackup} onRemove={removeLegacyCopyAfterBackup} />}
     {pendingEncryptedRestore && <EncryptedRestoreModal fileName={pendingEncryptedRestore.fileName} onClose={() => setPendingEncryptedRestore(null)} onRestore={async passphrase => {
       const restored = await decryptWorkspaceJson(pendingEncryptedRestore.json, passphrase)
       applyRestoredSnapshot(restored)
@@ -702,6 +1204,133 @@ function App() {
     {pendingImport && <ImportPreviewModal pending={pendingImport} storageConflict={storageConflict} onCancel={() => setPendingImport(null)} onConfirm={confirmImport} />}
     {toast && <div className={`toast ${toast.kind || 'good'}`} role="status"><span>{toast.kind === 'warn' ? <CircleAlert size={18} /> : <CheckCircle2 size={18} />}</span>{toast.text}<button onClick={() => setToast(null)} aria-label="Dismiss message"><X size={15} /></button></div>}
   </div>
+}
+
+function LockedWorkspaceGate({ issue, rawAvailable, rawPrepared, rawDownloaded, rawVerificationError, legacyCopyPresent, onUnlock, onDownloadRaw, onVerifyRaw, onRecoverLegacy, onRecoverBackup }: {
+  issue: string
+  rawAvailable: boolean
+  rawPrepared: boolean
+  rawDownloaded: boolean
+  rawVerificationError: string
+  legacyCopyPresent: boolean
+  onUnlock: (passphrase: string) => Promise<void>
+  onDownloadRaw: () => void
+  onVerifyRaw: (file?: File) => Promise<void>
+  onRecoverLegacy: (passphrase: string) => Promise<void>
+  onRecoverBackup: (file: File, backupPassphrase: string, passphrase: string) => Promise<void>
+}) {
+  const [passphrase, setPassphrase] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [recoverySource, setRecoverySource] = useState<'legacy' | 'backup'>(legacyCopyPresent ? 'legacy' : 'backup')
+  const [recoveryFile, setRecoveryFile] = useState<File | null>(null)
+  const [backupPassphrase, setBackupPassphrase] = useState('')
+  const [newPassphrase, setNewPassphrase] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [recoveryBusy, setRecoveryBusy] = useState(false)
+  const [recoveryError, setRecoveryError] = useState('')
+  const rawVerifyInput = useRef<HTMLInputElement>(null)
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try { await onUnlock(passphrase) } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'This encrypted workspace could not be unlocked.')
+    } finally { setBusy(false) }
+  }
+  async function recover(event: React.FormEvent) {
+    event.preventDefault()
+    if (recoveryBusy || (rawAvailable && !rawDownloaded)) return
+    if (Array.from(newPassphrase).length < MIN_LOCK_PASSPHRASE_LENGTH) { setRecoveryError(`Use a new passphrase of at least ${MIN_LOCK_PASSPHRASE_LENGTH} characters.`); return }
+    if (newPassphrase !== confirmation) { setRecoveryError('The new passphrases do not match.'); return }
+    if (recoverySource === 'backup' && !recoveryFile) { setRecoveryError('Choose a JSON backup file.'); return }
+    setRecoveryBusy(true)
+    setRecoveryError('')
+    try {
+      if (recoverySource === 'legacy') await onRecoverLegacy(newPassphrase)
+      else await onRecoverBackup(recoveryFile!, backupPassphrase, newPassphrase)
+    } catch (cause) {
+      setRecoveryError(cause instanceof Error ? cause.message : 'Recovery failed. No saved copy was removed.')
+    } finally { setRecoveryBusy(false) }
+  }
+  return <div className="app-shell"><header className="app-header"><div className="app-header-inner wrap"><Brand onClick={() => { window.location.hash = '/' }} /><span className="workspace-label">Encrypted local workspace</span></div></header>{legacyAddress && <aside className="legacy-migration wrap" aria-label="Duekrio's current address"><div><strong>Duekrio is now at duekrio.pages.dev.</strong><p>Unlock this older workspace, download a JSON backup, then restore and verify it at the new address. Browser data does not move automatically.</p></div><div className="legacy-migration-actions"><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duekrio.pages.dev <ArrowUpRight size={15} /></a></div></aside>}<main className="app-main wrap"><section className="recovery-panel locked-gate" aria-labelledby="locked-title"><div className="recovery-icon"><LockKeyhole size={30} /></div><span className="kicker">LOCAL WORKSPACE LOCK</span><h1 id="locked-title">Unlock your workspace.</h1><p>Your invoices are stored as encrypted browser data. The passphrase stays in this tab and is not sent to Duekrio. This tab stays unlocked until you lock it or reload.</p>
+    {issue ? <div className="notice warning" role="alert"><CircleAlert size={19} /><span>{issue} No existing browser copy was changed.</span></div> : <form onSubmit={event => void submit(event)}><div className="form-grid"><label>Workspace passphrase<input type="password" autoComplete="off" spellCheck={false} required value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="recovery-actions"><button type="submit" className="button button-primary" disabled={busy}><LockKeyhole size={17} /> {busy ? 'Unlocking and verifying…' : 'Unlock workspace'}</button></div></form>}
+    <div className="locked-gate-actions">{rawAvailable && <button type="button" className="button button-secondary" onClick={onDownloadRaw}><ArrowDownToLine size={17} /> 1. Download exact encrypted raw copy</button>}{rawPrepared && <><input ref={rawVerifyInput} type="file" accept=".json,application/json" className="sr-only" aria-label="Choose downloaded encrypted raw copy for byte verification" onChange={event => { void onVerifyRaw(event.target.files?.[0]); event.target.value = '' }} /><button type="button" className="button button-secondary" onClick={() => rawVerifyInput.current?.click()}><FileUp size={17} /> 2. Select that file to verify</button></>}<button type="button" className="button button-quiet" onClick={() => window.location.reload()}>Retry reading storage</button></div>
+    {rawVerificationError && <p className="form-error" role="alert">{rawVerificationError}</p>}
+    {legacyCopyPresent && <p className="locked-legacy-note"><CircleAlert size={17} /> An older unencrypted browser copy is still present. The lock does not protect that older copy. It will not be changed or deleted automatically.</p>}
+    <details className="locked-recovery"><summary>Recover from an older copy or JSON backup</summary><p>Recovery replaces the encrypted browser copy only after the source has been validated and the new encrypted write has been verified. Download the exact raw copy above and select the saved file to verify its bytes before replacement.</p><form onSubmit={event => void recover(event)}><div className="form-grid"><label>Recovery source<select value={recoverySource} onChange={event => { setRecoverySource(event.target.value as 'legacy' | 'backup'); setRecoveryError('') }}>{legacyCopyPresent && <option value="legacy">Older unencrypted browser copy</option>}<option value="backup">JSON backup file</option></select></label>{recoverySource === 'backup' && <><label>JSON backup file<input type="file" accept=".json,application/json" onChange={event => setRecoveryFile(event.target.files?.[0] ?? null)} /></label><label>Backup passphrase, if the file is encrypted<input type="password" autoComplete="off" value={backupPassphrase} onChange={event => setBackupPassphrase(event.target.value)} /></label></>}<label>New workspace passphrase<input type="password" autoComplete="new-password" required minLength={MIN_LOCK_PASSPHRASE_LENGTH} value={newPassphrase} onChange={event => setNewPassphrase(event.target.value)} /></label><label>Confirm new passphrase<input type="password" autoComplete="new-password" required value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label></div>{recoveryError && <p className="form-error" role="alert"><CircleAlert size={16} /> {recoveryError}</p>}<button type="submit" className="button button-secondary" disabled={recoveryBusy || (rawAvailable && !rawDownloaded)}>{recoveryBusy ? 'Checking and restoring…' : 'Restore encrypted workspace'}</button>{rawAvailable && !rawDownloaded && <small>Recovery unlocks after the selected raw file matches the current browser copy byte for byte.</small>}</form></details>
+    <small>If you lose the passphrase, Duekrio cannot recover this encrypted copy. Keep an encrypted JSON backup in a safe place.</small>
+  </section></main></div>
+}
+
+function LockSetupModal({ legacyCopyPresent, onClose, onCreate }: {
+  legacyCopyPresent: boolean
+  onClose: () => void
+  onCreate: (passphrase: string) => Promise<void>
+}) {
+  const [passphrase, setPassphrase] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const dialogRef = useDialogFocus<HTMLFormElement>(() => { if (!busy) onClose() })
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    if (Array.from(passphrase).length < MIN_LOCK_PASSPHRASE_LENGTH) { setError(`Use a unique passphrase of at least ${MIN_LOCK_PASSPHRASE_LENGTH} characters.`); return }
+    if (passphrase !== confirmation) { setError('The passphrases do not match.'); return }
+    setBusy(true)
+    setError('')
+    try { await onCreate(passphrase) } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The encrypted workspace could not be created. Your old browser copy remains available.')
+      setBusy(false)
+    }
+  }
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}><form ref={dialogRef} className="dialog backup-dialog" role="dialog" aria-modal="true" aria-labelledby="lock-setup-title" onSubmit={event => void submit(event)}><div className="dialog-head"><div><span className="drawer-kicker">OPTIONAL LOCAL ENCRYPTION</span><h2 id="lock-setup-title">Encrypt this workspace</h2><p>Use a passphrase to protect future browser saves on this device.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close encryption setup"><X size={20} /></button></div>
+    <p className="field-hint">The encrypted copy is verified before this tab switches to it. Your passphrase stays in memory only while the tab is unlocked. Duekrio cannot reset it; keep a separate encrypted backup.</p>
+    {legacyCopyPresent && <p className="preview-data-caution"><CircleAlert size={17} /><span>Your existing unencrypted browser copy will remain untouched. Until you separately remove that older copy after verifying a backup, this device still has readable invoice data.</span></p>}
+    <div className="form-grid"><label>New workspace passphrase<input type="password" autoComplete="new-password" spellCheck={false} required minLength={MIN_LOCK_PASSPHRASE_LENGTH} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label><label>Confirm passphrase<input type="password" autoComplete="new-password" spellCheck={false} required value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} /></label></div>
+    {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
+    <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancel</button><button type="submit" className="button button-primary" disabled={busy}><LockKeyhole size={17} /> {busy ? 'Encrypting and verifying…' : 'Create encrypted workspace'}</button></div>
+  </form></div>
+}
+
+function LegacyCleanupModal({ onClose, onDownload, onRemove }: {
+  onClose: () => void
+  onDownload: (passphrase: string) => Promise<void>
+  onRemove: (file: File, passphrase: string) => Promise<boolean>
+}) {
+  const [passphrase, setPassphrase] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [downloaded, setDownloaded] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const dialogRef = useDialogFocus<HTMLDivElement>(() => { if (!busy) onClose() })
+  async function download() {
+    if (Array.from(passphrase).length < MIN_BACKUP_PASSPHRASE_LENGTH) { setError(`Use a unique backup passphrase of at least ${MIN_BACKUP_PASSPHRASE_LENGTH} characters.`); return }
+    if (passphrase !== confirmation) { setError('The backup passphrases do not match.'); return }
+    setBusy(true)
+    setError('')
+    try { await onDownload(passphrase); setDownloaded(true) } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The encrypted backup could not be created.')
+    } finally { setBusy(false) }
+  }
+  async function verifyAndRemove() {
+    if (!downloaded || !file || busy) return
+    setBusy(true)
+    setError('')
+    try { await onRemove(file, passphrase) } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The older copy could not be removed. Nothing else was changed.')
+    } finally { setBusy(false) }
+  }
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}><div ref={dialogRef} className="dialog backup-dialog legacy-cleanup-dialog" role="dialog" aria-modal="true" aria-labelledby="cleanup-title"><div className="dialog-head"><div><span className="drawer-kicker">PROTECT THE OLDER COPY</span><h2 id="cleanup-title">Remove readable browser data</h2><p>The current encrypted workspace stays in place.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close old copy cleanup"><X size={20} /></button></div>
+    <p className="field-hint">First download a passphrase-encrypted backup of the older copy. Then select that file again. Duekrio decrypts and compares it with the exact older copy before offering to remove only the readable browser entry.</p>
+    <div className="form-grid"><label>Backup passphrase<input type="password" autoComplete="new-password" spellCheck={false} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label><label>Confirm backup passphrase<input type="password" autoComplete="new-password" spellCheck={false} value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} /></label></div>
+    <button type="button" className="button button-secondary" disabled={busy} onClick={() => void download()}><ArrowDownToLine size={17} /> 1. Download encrypted backup</button>
+    {downloaded && <div className="form-grid cleanup-verify"><label>Choose that downloaded encrypted JSON file<input type="file" accept=".json,application/json" onChange={event => setFile(event.target.files?.[0] ?? null)} /></label><p className="field-hint">The old copy will be removed only after the selected file decrypts to the matching data and the current encrypted workspace is verified again. Close any other tabs using this site before this step.</p></div>}
+    {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
+    <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Keep older copy</button><button type="button" className="button button-primary" disabled={!downloaded || !file || busy} onClick={() => void verifyAndRemove()}>{busy ? 'Checking copies…' : '2. Verify backup and remove old copy'}</button></div>
+  </div></div>
 }
 
 function InvoiceDrawer({ invoice, asOf, storageConflict, onClose, onSave, onDelete, onToast }: { invoice: Invoice; asOf: string; storageConflict: boolean; onClose: () => void; onSave: (invoice: Invoice) => void; onDelete: (invoice: Invoice) => boolean; onToast: (toast: Toast) => void }) {
@@ -769,12 +1398,12 @@ function AddInvoiceModal({ onClose, onAdd, replacingDemo, storageConflict }: { o
   return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div><LegacyDataCaution />{storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Keep this form in this tab, then download the tab backup. It will not save to browser storage.</p>}<div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> {storageConflict ? 'Keep for backup' : 'Add invoice'}</button></div></form></div>
 }
 
-function GuideModal({ onClose, onRestore }: { onClose: () => void; onRestore: () => void }) {
+function GuideModal({ locked, legacyCopyPresent, onClose, onRestore }: { locked: boolean; legacyCopyPresent: boolean; onClose: () => void; onRestore: () => void }) {
   const dialogRef = useDialogFocus<HTMLDivElement>(onClose)
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Duenara</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>This workspace lives without encryption in your browser's local storage. It has no login or team sync. Choose a passphrase-encrypted JSON backup for exported files; keep the passphrase separately because Duenara cannot recover it. Plain JSON and CSV exports remain readable. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Duekrio</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>{locked ? `Current browser saves are encrypted with your workspace passphrase.${legacyCopyPresent ? ' An older readable copy remains until you back it up, verify it and remove it explicitly.' : ''} The tab stays unlocked until you lock it or reload.` : 'Browser storage is readable until you enable workspace encryption.'} There is no login or team sync. Use encrypted JSON backups and keep the passphrase separately; Duekrio cannot recover it. Plain JSON and CSV exports remain readable. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
 }
 
-function BackupModal({ onClose, onPlain, onEncrypted }: { onClose: () => void; onPlain: () => void; onEncrypted: (passphrase: string) => Promise<void> }) {
+function BackupModal({ locked, legacyCopyPresent, onClose, onPlain, onEncrypted }: { locked: boolean; legacyCopyPresent: boolean; onClose: () => void; onPlain: () => void; onEncrypted: (passphrase: string) => Promise<void> }) {
   const [passphrase, setPassphrase] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
@@ -794,9 +1423,9 @@ function BackupModal({ onClose, onPlain, onEncrypted }: { onClose: () => void; o
   return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}>
     <div ref={dialogRef} className="dialog backup-dialog" role="dialog" aria-modal="true" aria-labelledby="backup-title"><form onSubmit={event => void submit(event)}>
       <div className="dialog-head"><div><span className="drawer-kicker">BACK UP YOUR WORK</span><h2 id="backup-title">Choose a JSON backup</h2><p>Encrypted is safer for a file you will store or move.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close backup options"><X size={20} /></button></div>
-      <p className="field-hint">Only the downloaded encrypted file is protected. This browser workspace and CSV exports remain readable to anyone with access to your browser profile or exported files.</p>
+      <p className="field-hint">{locked ? `Current browser saves are encrypted.${legacyCopyPresent ? ' An older readable browser copy remains until you remove it.' : ''}` : 'This browser workspace is readable.'} Plain JSON and CSV exports are readable. Only the downloaded encrypted backup file is protected by its backup passphrase.</p>
       <div className="form-grid"><label>Backup passphrase<input type="password" autoComplete="off" spellCheck={false} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} minLength={MIN_BACKUP_PASSPHRASE_LENGTH} placeholder="At least 16 characters" /></label><label>Repeat passphrase<input type="password" autoComplete="off" spellCheck={false} value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} placeholder="Enter the same passphrase" /></label></div>
-      <p className="field-hint">Use a long, unique passphrase and keep it separately. Duenara cannot recover the file if you lose it. The passphrase is not sent or saved by Duenara.</p>
+      <p className="field-hint">Use a long, unique passphrase and keep it separately. Duekrio cannot recover the file if you lose it. The passphrase is not sent or saved by Duekrio.</p>
       {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
       <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy} onClick={onPlain}>Download readable JSON</button><button type="submit" className="button button-primary" disabled={busy}><LockKeyhole size={17} /> {busy ? 'Encrypting…' : 'Download encrypted JSON'}</button></div>
     </form></div>

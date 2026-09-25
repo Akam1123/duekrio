@@ -21,9 +21,9 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run build
-      - run: git diff --exit-code -- Duenara-offline.html PromiseLedger-offline.html
+      - run: git diff --exit-code -- Duekrio-offline.html Duenara-offline.html PromiseLedger-offline.html
       - run: npm run build:hosted
         env:
           # Build-only placeholder, not a claimed deployment URL.
           # Production must use the exact hostname assigned by Pages.
-          PUBLIC_ORIGIN: https://qa-duenara.pages.dev/
+          PUBLIC_ORIGIN: https://qa-duekrio.pages.dev/

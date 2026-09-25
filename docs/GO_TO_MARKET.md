@@ -1,10 +1,10 @@
-# Duenara: first-customer plan
+# Duekrio: first-customer plan
 
-Plan drafted 25 September 2026. Duenara is live as a free prototype at [duenara.pages.dev](https://duenara.pages.dev/), with a provisional name pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
+Plan drafted 25 September 2026. Duekrio is a free prototype with a Cloudflare Pages project prepared at [duekrio.pages.dev](https://duekrio.pages.dev/); the rebranded release requires upload and live verification. The name remains provisional pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
 
 ## Positioning
 
-For small B2B service firms with overdue invoices, Duenara is a focused workspace for recording *why payment is stuck, who owns the next step, and what the customer committed to do*. It starts from an aging-report CSV and leaves invoicing in the firm's existing accounting system. Avoid promising that a reminder sequence or AI will recover a specific percentage of receivables.
+For small B2B service firms with overdue invoices, Duekrio is a focused workspace for recording *why payment is stuck, who owns the next step, and what the customer committed to do*. It starts from an aging-report CSV and leaves invoicing in the firm's existing accounting system. Avoid promising that a reminder sequence or AI will recover a specific percentage of receivables.
 
 ## Qualify the first buyer
 
@@ -59,11 +59,11 @@ After 20 qualified interviews, revisit the ICP if fewer than 7 report the specif
 
 ## Measuring value honestly
 
-Capture a baseline during each pilot: open invoices, aging buckets, time spent on weekly follow-up, number of unresolved blockers, and number of commitments missed. Compare the same measures after two cycles. Count cash as recovered only when the buyer confirms payment in the ledger; do not attribute all paid invoices to Duenara. Report self-reported time savings separately from verified payment outcomes. Ask permission before publishing any identifiable result.
+Capture a baseline during each pilot: open invoices, aging buckets, time spent on weekly follow-up, number of unresolved blockers, and number of commitments missed. Compare the same measures after two cycles. Count cash as recovered only when the buyer confirms payment in the ledger; do not attribute all paid invoices to Duekrio. Report self-reported time savings separately from verified payment outcomes. Ask permission before publishing any identifiable result.
 
 ## Operating limits for the initial release
 
-The proposed local-first workflow depends on the user's browser/device and manual CSV refresh. It may not provide multi-user coordination, automatic email sending, bank reconciliation, or a durable off-device backup. Explain the actual implemented behavior prominently before a pilot. Do not request raw customer invoices by email; prefer redacted samples and on-device import. A local-first interface can reduce credential-sharing needs, but it does not by itself prove security or compliance.
+The local-first workflow depends on the user's browser/device and manual CSV refresh. It has no multi-user coordination, automatic email sending, bank reconciliation, or automatic off-device backup. A downloaded JSON backup is user-managed; it must be stored under the firm's own policy. Explain the actual implemented behavior prominently before a pilot. Do not request raw customer invoices by email; prefer redacted samples and on-device import. A local-first interface can reduce credential-sharing needs, but it does not by itself prove security or compliance.
 
 ## Sources behind the plan
 

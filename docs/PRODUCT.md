@@ -1,10 +1,10 @@
 # Product brief
 
-Duenara is the provisional name for this working prototype. It is not trademark-cleared, and marketing is on hold.
+Duekrio is the provisional name for this working prototype. It is not trademark-cleared, and marketing is on hold.
 
 ## Problem and user
 
-Small B2B service firms often have open invoices spread across an accounting report, an inbox, and individual teammates' notes. The AR balance identifies what is unpaid, but it does not always capture the reason or the next human action. Duenara is for a 5–30 person team whose founder, operations lead, or finance coordinator owns customer follow-up.
+Small B2B service firms often have open invoices spread across an accounting report, an inbox, and individual teammates' notes. The AR balance identifies what is unpaid, but it does not always capture the reason or the next human action. Duekrio is for a 5–30 person team whose founder, operations lead, or finance coordinator owns customer follow-up.
 
 ## Product promise
 
@@ -19,7 +19,8 @@ Make every open invoice actionable: **why is it unpaid, who owns the next step, 
 | Human context | Record reason for nonpayment, owner, next action, notes, and promise date. |
 | Focus | Sort or filter for overdue invoices and follow-ups that need attention. |
 | Follow-up | Generate a copyable email draft for a person to review in their own mail client. |
-| Portability | Export a working CSV or versioned JSON backup, and restore a compatible JSON backup. |
+| Portability | Export a working CSV or versioned JSON backup, optionally encrypt a JSON backup with a passphrase, and restore a compatible JSON backup. |
+| Local protection | Default browser saves are readable; the user can opt in to passphrase-encrypted local saves and explicitly remove an older readable copy after a verified backup. |
 | Reconciliation | Flag previously open invoices absent from the latest CSV and locally paid invoices still present; require a person to review their ledger before changing status. |
 
 ## Deliberate boundaries
@@ -31,7 +32,7 @@ Make every open invoice actionable: **why is it unpaid, who owns the next step, 
 - Owner fields are labels within the local board; they do not assign work to another person's account or send notifications.
 - No claim that a draft, promise date, or board state proves a payment will occur.
 
-The local-first design keeps setup light, but browser storage is not a durable business record. Users must export backups and verify financial values in their accounting system. CSV layouts vary, so the import flow needs clear feedback when a file cannot be read or mapped.
+The local-first design keeps setup light, but browser storage is not a durable business record. Users must export backups and verify financial values in their accounting system. Local encryption does not protect data while a tab is unlocked or make CSV and plain JSON exports private. CSV layouts vary, so the import flow needs clear feedback when a file cannot be read or mapped.
 
 The importer currently treats amounts as USD, accepts ISO or US month/day/year dates, and preserves existing notes on reimport. It prefers balance columns over generic amount columns when both are present. It also retains invoices omitted from a later CSV, because omission alone does not prove payment. A person must reconcile status with the accounting ledger. Users can delete an invoice from its detail drawer after confirmation, and restoring a backup requires confirmation before replacing current work.
 
@@ -50,7 +51,7 @@ Pilot with a handful of B2B service teams using sample or authorized AR exports.
 ## Honest roadmap
 
 1. Strengthen CSV column mapping, import error explanations, and duplicate handling based on real authorized exports.
-2. Add safer backup and restore, plus a visible snapshot date and stale-data warning.
+2. Improve backup portability and visible snapshot/stale-data warnings based on observed use, without weakening old-format restore.
 3. Explore team collaboration and accounting integrations only after the manual workflow earns repeat use and the security model is ready.
 
 These are possible next steps, not shipped features or delivery commitments.

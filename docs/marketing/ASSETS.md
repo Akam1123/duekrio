@@ -1,8 +1,8 @@
 # Prepared launch creative — hold
 
-The user has explicitly said not to begin promotion yet. These are prepared drafts, not published posts or sent messages. Duenara is a provisional name, not trademark-cleared. The public site is now live at [https://duenara.pages.dev/](https://duenara.pages.dev/). `[VERIFIED_LIVE_URL]` remains a deliberate publication placeholder: replace it with the then-current verified URL only after the user starts promotion and the brand, private contact route, page facts, and channel rules are rechecked. Do not publish any draft while the placeholder remains. “Free” describes current access to the prototype; it is not a forever-pricing promise. All examples below use fictional situations.
+The user has explicitly said not to begin promotion yet. These are prepared drafts, not published posts or sent messages. Duekrio is a provisional name, not trademark-cleared. The [https://duekrio.pages.dev/](https://duekrio.pages.dev/) project has been created, but its rebranded release still needs upload and live verification. `[VERIFIED_LIVE_URL]` remains a deliberate publication placeholder: replace it with the then-current verified URL only after the user starts promotion and the brand, private contact route, page facts, and channel rules are rechecked. Do not publish any draft while the placeholder remains. “Free” describes current access to the prototype; it is not a forever-pricing promise. All examples below use fictional situations.
 
-Prepared artwork: [Duenara social square](../../public/media/duenara-social-square.png) and [Open Graph preview](../../public/og-card.png). Neither has been posted.
+Prepared artwork: [Duekrio social square](../../public/media/duekrio-social-square.png) and [Open Graph preview](../../public/og-card.png). Neither has been posted.
 
 ## Core copy
 
@@ -18,13 +18,15 @@ Prepared artwork: [Duenara social square](../../public/media/duenara-social-squa
 
 **Trust line:** No accounting login. No automatic emails. Data stays in this browser; export a backup and confirm balances in your accounting system.
 
-**Search title:** AR Aging Follow-Up Board for Small B2B Teams | Duenara
+**Search title:** AR Aging Follow-Up Board for Small B2B Teams | Duekrio
 
 **Meta description:** Turn an AR aging CSV into a clear invoice follow-up plan. Track blockers, owners, next actions, and payment promises. Explore a free sample board.
 
 **Five-second product description:** A local-first action board for overdue B2B invoices. Start with a CSV, then record the human context an aging report misses.
 
-## Prepared guide draft
+## Optional longer guide draft
+
+The site already contains a weekly AR review checklist and overdue-email templates. Use this longer draft only if later buyer questions reveal a distinct need; otherwise improve the existing checklist. Do not publish a near-duplicate page to create another search URL.
 
 **Title: How to turn an AR aging report into a weekly action list**
 
@@ -46,7 +48,7 @@ Before sending a follow-up, compare the invoice with the current ledger and rece
 
 At the next weekly review, close completed actions, deliberately reschedule unfinished ones, and reconcile the list with a fresh accounting export. If an invoice disappears from the new file, investigate rather than assuming it was paid. If it remains after you marked it paid locally, verify the ledger before contacting the customer.
 
-Duenara is a free prototype for running this workflow beside your accounting system. Import a flat AR CSV, capture blockers and next steps, draft a message for review, and export a backup. It stores work in your browser on your device; there is no account or cloud sync. Explore the fictional sample board at [VERIFIED_LIVE_URL] before using a real export.
+Duekrio is a free prototype for running this workflow beside your accounting system. Import a flat AR CSV, capture blockers and next steps, draft a message for review, and export a backup. It stores work in your browser on your device; there is no account or cloud sync. Explore the fictional sample board at [VERIFIED_LIVE_URL] before using a real export.
 
 **Editorial note:** This guide is a workflow example, not accounting or legal advice. Add an author/date and a screenshot of the fictional sample board on publication. If citing market prevalence, use the [QuickBooks 2026 late-payments report](https://quickbooks.intuit.com/r/small-business-data/small-business-late-payments-report-2026/) with its vendor-survey caveat; no market statistic is needed for the guide to be useful.
 
@@ -58,7 +60,7 @@ An AR aging report can tell you that an invoice is 35 days overdue. It usually c
 
 That distinction changes the next step. Another reminder may be pointless; sending the corrected invoice is useful.
 
-I built Duenara to keep four things together for each open invoice: the blocker, the owner, the next action, and any promised payment date. It starts with a CSV export and drafts follow-ups for a person to review. No accounting login or automatic sending.
+I built Duekrio to keep four things together for each open invoice: the blocker, the owner, the next action, and any promised payment date. It starts with a CSV export and drafts follow-ups for a person to review. No accounting login or automatic sending.
 
 Here is the free demo with fictional data: [VERIFIED_LIVE_URL]
 
@@ -82,7 +84,7 @@ I wrote a short guide and built a free board for the workflow: [VERIFIED_LIVE_UR
 
 I wanted an invoice follow-up tool that could start from an AR export without asking for accounting credentials.
 
-In Duenara you import a flat CSV, review the open invoices, record the blocker and owner, and prepare a short follow-up draft. The draft is yours to check and send. The app runs in your browser; export a backup because there is no cloud sync.
+In Duekrio you import a flat CSV, review the open invoices, record the blocker and owner, and prepare a short follow-up draft. The draft is yours to check and send. The app runs in your browser; export a backup because there is no cloud sync.
 
 Try the fictional sample first: [VERIFIED_LIVE_URL]
 
@@ -94,7 +96,7 @@ For a small team, I would start from a current AR aging export and separate “l
 
 ## One-to-one email drafts
 
-These drafts are conditional assets for existing contacts or an introduction the recipient has agreed to receive. They are not scheduled for sending. After the start instruction, the assistant may use one only if an authorized messaging channel, a real sender identity, and a recipient who expects the message already exist. Otherwise this channel is skipped. Do not use them as a scraped-list campaign.
+These drafts are conditional assets for existing contacts or an introduction the recipient has agreed to receive. They are not scheduled for sending or ready to send as written. After the start instruction, the assistant may use one only if an authorized messaging channel, a real sender identity, and a recipient who expects the message already exist. If the message's primary purpose is commercial promotion, the final email also needs the applicable sender identification, postal address, ad disclosure, and opt-out path described by the [FTC's CAN-SPAM guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business); that guide expressly covers B2B and individual commercial emails. No sender address or opt-out process is established here, so skip this channel until both exist. Do not use these drafts as a scraped-list campaign.
 
 ### Asked-for introduction to a bookkeeper
 
@@ -104,7 +106,7 @@ Hi [name],
 
 [Mutual contact] suggested you might have a useful view on how small service firms handle overdue invoices that need more than an automatic reminder. I built a free prototype that turns an AR aging CSV into a list of blockers, owners, next actions, and payment promises.
 
-Would you be open to a 15-minute critique of the workflow? The fictional sample is here: [VERIFIED_LIVE_URL] . There is no need to send me a client's invoices.
+Would you be open to a 15-minute critique of the workflow? The fictional sample is here: [VERIFIED_LIVE_URL]. There is no need to send me a client's invoices.
 
 If this is not relevant, no reply needed.
 
@@ -118,7 +120,7 @@ Hi [name],
 
 Thanks for looking at the demo. My notes were that [specific challenge they mentioned, without confidential amounts or names]. I updated/plan to test [one precise action].
 
-The sample board is here: [VERIFIED_LIVE_URL] . If you decide to try your own export, verify the column mapping and use Backup afterward; it stays in that browser and does not sync to other devices.
+The sample board is here: [VERIFIED_LIVE_URL]. If you decide to try your own export, verify the column mapping and use Backup afterward; it stays in that browser and does not sync to other devices.
 
 Would a two-week test across your next two AR reviews be useful? I can learn from the steps that feel slow without receiving your raw invoice file.
 
@@ -148,4 +150,4 @@ Demo: [VERIFIED_LIVE_URL]
 
 **32–40s:** Show export backup. Say, “This prototype stores work in your browser, so keep a backup and verify balances in your accounting ledger.”
 
-**40–45s:** “Try the free fictional sample at Duenara.” Display the public URL. Use captions and a real screen recording; no fabricated customer outcome.
+**40–45s:** “Try the free fictional sample at Duekrio.” Display the public URL. Use captions and a real screen recording; no fabricated customer outcome.

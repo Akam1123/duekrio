@@ -4,9 +4,11 @@ Reviewed September 25, 2026 against the [user-supplied Vibe Coded Websites Repor
 
 ## New-host release check
 
+The completed row below records the earlier Duenara Cloudflare release. Duekrio has not been included in those checks; run them again after its upload.
+
 | Status | Report theme | Evidence in this site | Follow-up |
 | --- | --- | --- | --- |
-| Completed for checked release | Functional links and technical metadata | Some source files retain the GitHub Pages origin or `/promiseledger/` paths for the legacy build. The hosted build rewrites those references for `https://duenara.pages.dev/`. The live root and privacy pages returned 200; canonical/privacy host and security headers matched the hosted build. Sample-board, backup, and mobile smoke checks passed. | Recheck internal routes, static assets, canonical/OG URLs, 404, and browser console after every manual Cloudflare upload. Keep the old address available for data migration. This check is not proof that every device or future release is correct. |
+| Completed for checked release | Functional links and technical metadata | At that release, source files used the GitHub Pages origin and `/promiseledger/` paths for the legacy build. The hosted build rewrites those references for `https://duenara.pages.dev/`. The live root and privacy pages returned 200; canonical/privacy host and security headers matched the hosted build. Sample-board, backup, and mobile smoke checks passed. | Recheck internal routes, static assets, canonical/OG URLs, 404, and browser console after every manual Cloudflare upload. Keep the old address available for data migration. This check is not proof that every device or future release is correct. |
 
 ## Remaining polish
 

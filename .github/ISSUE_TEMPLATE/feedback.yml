@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for trying PromiseLedger. Please use fictional or redacted examples. GitHub issues are public.
+        Thanks for trying Duekrio. Please use fictional or redacted examples. GitHub issues are public.
   - type: dropdown
     id: role
     attributes:
@@ -27,7 +27,7 @@ body:
   - type: textarea
     id: friction
     attributes:
-      label: What was useful or frustrating in PromiseLedger?
+      label: What was useful or frustrating in Duekrio?
       placeholder: A concrete step you tried is most helpful.
     validations:
       required: true

@@ -1,50 +1,46 @@
 # Public hosting and address
 
-**Status, September 25, 2026:** The primary public site is [https://duenara.pages.dev/](https://duenara.pages.dev/), a Cloudflare Pages Free project. The tested hosted build for Git commit `21141c6` was deployed by **direct upload** to the project's `main` production branch. The old [GitHub Pages address](https://akam1123.github.io/promiseledger/) remains accessible as a migration fallback. No marketing has started.
+**Status, September 25, 2026:** The new Cloudflare Pages Free direct-upload project `duekrio` has been created for [https://duekrio.pages.dev/](https://duekrio.pages.dev/). This document does not claim that a Duekrio build has been uploaded or verified yet. The earlier [Duenara site](https://duenara.pages.dev/) remains on its own Cloudflare origin, and the [GitHub Pages address](https://akam1123.github.io/promiseledger/) remains a legacy migration fallback. Marketing has not started.
 
 ## Choice and cost
 
-Cloudflare Pages Free hosts this static browser app at a dedicated HTTPS subdomain with no username or project path. Cloudflare publishes [Pages Free limits](https://developers.cloudflare.com/pages/platform/limits/); the free tier and terms may change. This `pages.dev` subdomain is a usable public address, but it is not ownership of a privately registered `.com` or other custom domain. A custom domain requires lawful control of that domain.
+Cloudflare Pages Free can serve this static browser app at a dedicated HTTPS subdomain with no username or project path. Cloudflare publishes [Pages Free limits](https://developers.cloudflare.com/pages/platform/limits/); the free tier and terms may change. A `pages.dev` address is a usable public address once deployed, but is not ownership of a privately registered domain. A custom domain requires lawful control of that domain. [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) make the old path a poor fit for a commercial SaaS; it is retained so visitors can export browser data. [Cloudflare's self-serve terms](https://www.cloudflare.com/terms/) still place responsibility on the account holder.
 
-The [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits) make that free service a poor fit for operating a commercial SaaS; its existing URL is retained for backup export, not as the primary business host. [Cloudflare's self-serve terms](https://www.cloudflare.com/terms/) still place legal responsibility on the account holder; free hosting does not remove operator duties.
+## Release procedure
 
-[Netlify Free](https://www.netlify.com/blog/introducing-netlify-free-plan/) remains a possible fallback, not an active deployment. Switching providers would require a fresh review of its limits, headers, and privacy disclosure.
-
-## Initial verified release and subsequent deployments
-
-The project name and URL are now known. To prepare a later release from a reviewed commit, set `PUBLIC_ORIGIN` to the exact production URL and run these commands from the repository root:
+Build from reviewed source for the new host:
 
 ```powershell
-$env:PUBLIC_ORIGIN = 'https://duenara.pages.dev/'
+$env:PUBLIC_ORIGIN = 'https://duekrio.pages.dev/'
 npm ci
 npm test
 npm audit --audit-level=high
 npm run build:hosted
 ```
 
-Upload the resulting `dist-hosted/` directory to the existing **Duenara Cloudflare Pages direct-upload project** on its `main` production branch, then verify the public response again. With Wrangler authenticated to the correct Cloudflare account, a reproducible upload from a **clean checkout of the same reviewed commit used for the build** is:
+Review `dist-hosted/`, its generated canonical/social links and privacy host disclosure, the noindex and security headers in `_headers`, and the actual app/backup flows before uploading. Upload that exact directory to the `duekrio` Pages project's `main` production branch. With Wrangler authenticated to the correct Cloudflare account, an upload from a clean checkout of the reviewed commit can use:
 
 ```powershell
 $reviewedCommit = (git rev-parse HEAD).Trim()
-npx wrangler pages deploy dist-hosted --project-name duenara --branch main --commit-hash $reviewedCommit
+npx wrangler pages deploy dist-hosted --project-name duekrio --branch main --commit-hash $reviewedCommit
 ```
 
-Check `git status --short` before building and uploading; a dirty tree means the commit hash may not describe the deployed files. The hosted build serves content at `/`, rewrites canonical/social links and the 404 page, states Cloudflare Pages on the hosted privacy page, removes offline-only inline code, and writes `_headers` with a strict CSP and other browser defenses. The normal `npm run build` still produces the GitHub Pages and offline distributions. Keep `PUBLIC_ORIGIN` equal to the exact production origin; a local build is not itself a deployment.
+Only pass `--commit-hash` when the built files match that commit; a dirty tree means the hash may misdescribe the deployed files. GitHub push and CI do not publish this direct-upload project. [Cloudflare says a Direct Upload project cannot be converted to Git integration](https://developers.cloudflare.com/pages/get-started/direct-upload/). A later CI upload would need a reviewed workflow and a restricted Pages Edit token kept in GitHub Actions secrets. No Cloudflare credential belongs in this repository.
 
-The project is **direct upload, not Git-integrated**. GitHub push and CI do not update `duenara.pages.dev`; a tested build must be uploaded manually until a separate deployment integration is configured and verified. Do not treat a GitHub Actions success badge as evidence that Cloudflare is serving the new commit. [Cloudflare says a Direct Upload project cannot be converted to Git integration](https://developers.cloudflare.com/pages/get-started/direct-upload/). To automate uploads to **this same project**, use [Cloudflare's Direct Upload CI procedure](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/) with a Cloudflare Pages Edit API token and account ID kept in GitHub Actions secrets, limited to the required project/account scope where the provider permits it, and a reviewed workflow that builds and deploys `dist-hosted/` from `main`. A separate new Git-integrated Pages project is the alternative if native Git integration is required; that would need a new URL/migration review. Neither route is configured now.
+The source and normal build now target the Duekrio root path `/`. The hosted build writes canonical/social URLs for `PUBLIC_ORIGIN`, keeps the Cloudflare Pages disclosure, removes offline-only inline code, and writes a strict CSP and other response headers. `npm run build` also creates standalone offline files under the new name and both old filename aliases. The old PromiseLedger repository and GitHub Pages deployment remain unchanged for migration; this new source repo has no GitHub Pages deployment workflow.
 
-No Cloudflare API token or deployment credential belongs in the repository. The owner-authorized account and project exist; any future account authentication must use the provider's legitimate flow, without putting passwords or codes into project files or chat.
+## Keep both old origins usable for migration
 
-The new address is an actual Cloudflare Pages deployment, not a temporary Worker preview or a DNS alias to GitHub Pages.
+Browser `localStorage` belongs to an origin. The GitHub Pages, old Duenara Cloudflare, and new Duekrio Cloudflare URLs are three distinct storage origins. A user must open the address where the work was saved, unlock it if necessary, download a JSON backup, restore it at Duekrio, and verify the restored records before removing the old copy. CSV alone does not preserve the whole workspace. Do not automatically redirect or remove either old workspace.
 
-The live `_headers` includes `X-Robots-Tag: noindex, nofollow` while promotion is paused. Public visitors with the direct URL can use the app, but search engines are asked not to index it. Remove that directive only when promotion is authorized and the legal/brand review is complete. The visible Duenara rename retains the legacy browser-storage key and accepts old PromiseLedger JSON backups; the hostname change still requires export and restore.
+After Duekrio is uploaded and checked, build a compatibility release for the **existing** `duenara` Pages project with `PUBLIC_ORIGIN=https://duenara.pages.dev/` and upload it to that project's `main` branch. That build must retain backup/export and restore in place, and clearly link to Duekrio with migration steps. Its canonical/social links must identify its own actual host; the privacy page must explain that it is the older Cloudflare origin. Test old data, including any locked workspace, before replacing the old deployment. The old PromiseLedger GitHub Pages deployment stays available in its prior repository for export.
 
-## Verification recorded for the initial release
+Both Cloudflare deployments include `X-Robots-Tag: noindex, nofollow` while promotion is paused. That header asks search engines not to index the pages; it does not make them private. Remove it only after the owner starts promotion and the brand/legal review is complete.
 
-1. The live home and `/privacy/` pages returned HTTP 200. Their canonical/privacy links use `https://duenara.pages.dev/`; the privacy page names Cloudflare Pages as host.
-2. The live response sent `Content-Security-Policy` with `script-src 'self'`, `connect-src 'none'`, and `frame-ancestors 'none'`, plus `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, HSTS, a referrer policy, a permissions policy, and `X-Robots-Tag: noindex, nofollow`. This confirms the policy at the checked URLs and time, not every future release.
-3. A live browser check passed the fictional sample board, mobile layout, and JSON backup/restore flow. This is functional smoke testing, not a penetration test or guarantee across all browsers.
-4. The old app remains available because browser `localStorage` is tied to its origin. Existing visitors can export JSON on the old host and restore it on the new one. Do not silently redirect or remove that route before migration is clear.
-5. Recheck root, app, privacy, terms, resources, guide pages, unknown routes, mobile layout, backup/restore, canonical/OG URLs, and real response headers after **each manual upload**. Keep marketing on hold until separately authorized.
+## Verification and earlier release history
 
-The source review is in [SECURITY_AUDIT.md](SECURITY_AUDIT.md) and the operational/legal limits are in [LEGAL_RISK_REVIEW.md](LEGAL_RISK_REVIEW.md). Neither document is a legal opinion or a guarantee of safety.
+For **each** upload, check live home, app, privacy, terms, resources, guide pages, unknown routes, mobile layout, backup/restore, canonical/OG URLs, and response headers. Confirm the site serves the reviewed build; a local test or CI pass is not evidence of a successful Cloudflare upload. Record the checked URL, time, commit/build, and outcome here after deployment.
+
+Earlier on 25 September 2026, the `duenara` direct-upload project's `main` branch received the tested hosted build for Git commit `21141c6`. At that time its live home and privacy pages returned HTTP 200 with `https://duenara.pages.dev/` canonical links, Cloudflare disclosure, the intended security headers and `noindex, nofollow`. A live browser check passed the fictional sample board, mobile layout, and JSON backup/restore flow. Those are historical, point-in-time checks of that earlier release, not verification of Duekrio or a future upload.
+
+See [SECURITY_AUDIT.md](SECURITY_AUDIT.md), [LEGAL_RISK_REVIEW.md](LEGAL_RISK_REVIEW.md), and [BRAND.md](BRAND.md) for the current limits. None is a guarantee of safety or a legal opinion.

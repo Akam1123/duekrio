@@ -88,4 +88,48 @@ describe('workspace persistence', () => {
     expect(saveWorkspaceIfCurrent(storage, first.kind === 'saved' ? first.raw : null, original)).toEqual({ kind: 'conflict' })
     expect(JSON.parse(storage.getItem(WORKSPACE_STORAGE_KEY)!)).toEqual(newer)
   })
+
+  it('preserves the previous snapshot after a failed write and refuses a stale retry', () => {
+    const values = new Map<string, string>()
+    let failWrites = false
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        if (failWrites) throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        values.set(key, value)
+      },
+    }
+    const original = { invoices: [row], demo: false, review: { missingKeys: [], paidSeenKeys: [] } }
+    const first = saveWorkspaceIfCurrent(storage, null, original)
+    expect(first.kind).toBe('saved')
+    if (first.kind !== 'saved') return
+
+    const pending = { ...original, review: { missingKeys: [row.key], paidSeenKeys: [] } }
+    failWrites = true
+    expect(() => saveWorkspaceIfCurrent(storage, first.raw, pending)).toThrow('Quota exceeded')
+    expect(storage.getItem(WORKSPACE_STORAGE_KEY)).toBe(first.raw)
+
+    failWrites = false
+    const otherTab = { ...original, demo: true }
+    const otherResult = saveWorkspaceIfCurrent(storage, first.raw, otherTab)
+    expect(otherResult.kind).toBe('saved')
+    expect(saveWorkspaceIfCurrent(storage, first.raw, pending)).toEqual({ kind: 'conflict' })
+    expect(JSON.parse(storage.getItem(WORKSPACE_STORAGE_KEY)!)).toEqual(otherTab)
+  })
+
+  it('does not report success when browser storage silently drops a write', () => {
+    const values = new Map<string, string>()
+    let dropWrites = true
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { if (!dropWrites) values.set(key, value) },
+    }
+    const snapshot = { invoices: [row], demo: false, review: { missingKeys: [], paidSeenKeys: [] } }
+    expect(saveWorkspaceIfCurrent(storage, null, snapshot)).toEqual({ kind: 'failed' })
+    expect(storage.getItem(WORKSPACE_STORAGE_KEY)).toBeNull()
+    dropWrites = false
+    const retry = saveWorkspaceIfCurrent(storage, null, snapshot)
+    expect(retry.kind).toBe('saved')
+    expect(JSON.parse(storage.getItem(WORKSPACE_STORAGE_KEY)!)).toEqual(snapshot)
+  })
 })
