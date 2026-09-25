@@ -54,6 +54,8 @@ These commands run from this repository's root. See `package.json` for the exact
 
 Duenara is local-first. The prototype has no account, cloud sync, or server-side backup. Working data remains in this browser on this device; clearing browser storage or changing devices can remove access to it. Use the export function to keep a separate backup. Anyone with access to your browser profile may be able to view the stored data, so use a trusted device and avoid importing information you are not authorized to handle.
 
+The temporary GitHub Pages preview shares its browser origin with other paths under `akam1123.github.io`; use fictional or non-confidential data there until the dedicated host is live. JSON backups now include sample status and reconciliation flags. If another tab changes a workspace, the stale tab pauses saving and lets you download its copy before loading the latest version. Keep only one editing tab open on browsers without Web Locks support.
+
 If saved browser data cannot be read, the app pauses changes and offers a download of the unreadable data before you choose to restore a valid backup or discard it. That download is a recovery aid, not a guaranteed repair.
 
 An owner name on an invoice is an organizational label. It does not grant access, assign an account, or notify that teammate.

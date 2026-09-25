@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/build-offline.mjs",
+    "build": "tsc -b && vite build && node scripts/build-offline.mjs && node scripts/apply-pages-csp.mjs",
     "build:hosted": "tsc -b && vite build --base=/ --outDir dist-hosted && node scripts/prepare-hosted.mjs",
     "build:offline": "node scripts/build-offline.mjs",
     "preview": "vite preview",

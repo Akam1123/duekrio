@@ -28,22 +28,25 @@ import {
 import {
   deriveInvoice,
   exportInvoicesCsv,
-  exportLedgerJson,
   importLedgerJson,
   parseInvoiceCsv,
   prioritizeInvoices,
 } from './lib/ledger'
+import {
+  WORKSPACE_STORAGE_KEY,
+  emptyReview,
+  exportWorkspaceJson,
+  importWorkspaceJson,
+  saveWorkspaceIfCurrent,
+  serializeWorkspace,
+} from './lib/workspace'
+import type { ImportReview } from './lib/workspace'
 import type { CsvImportResult, Invoice, InvoiceAnnotation } from './lib/types'
 
 type View = 'home' | 'app'
 type QueueFilter = 'all' | 'overdue' | 'action' | 'promise' | 'review' | 'paid'
 type Toast = { text: string; kind?: 'good' | 'warn' }
-type ImportReview = { missingKeys: string[]; paidSeenKeys: string[] }
 type PendingImport = { fileName: string; result: CsvImportResult; review: ImportReview; replacingDemo: boolean }
-const emptyReview = (): ImportReview => ({ missingKeys: [], paidSeenKeys: [] })
-
-// Preserve this legacy key so an existing browser keeps its saved workspace.
-const STORAGE_KEY = 'promiseledger.workspace.v1'
 const MAX_CSV_BYTES = 2 * 1024 * 1024
 // Leave room for notes and non-ASCII text in a valid browser-storage backup,
 // while rejecting unexpectedly large files before reading or parsing them.
@@ -51,6 +54,7 @@ const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024
 const sampleCsvUrl = (window as Window & { __DUENARA_SAMPLE_CSV_URL__?: string }).__DUENARA_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
 const contentBaseUrl = window.location.protocol === 'file:' ? 'https://akam1123.github.io/promiseledger/' : import.meta.env.BASE_URL
+const sharedPreviewHost = window.location.hostname === 'akam1123.github.io'
 const today = () => {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -268,21 +272,21 @@ function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => voi
   </div>
 }
 
-function loadSaved(): { invoices: Invoice[]; demo: boolean; review: ImportReview; warning?: string; corruptRaw?: string } {
+function loadSaved(): { invoices: Invoice[]; demo: boolean; review: ImportReview; raw: string | null; warning?: string; corruptRaw?: string } {
   let raw: string | null = null
   try {
-    raw = window.localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return { invoices: [], demo: false, review: emptyReview() }
+    raw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY)
+    if (raw === null) return { invoices: [], demo: false, review: emptyReview(), raw }
     const parsed = JSON.parse(raw) as { invoices?: unknown; demo?: unknown; review?: Partial<ImportReview> }
     const invoices = importLedgerJson(JSON.stringify({ format: 'duenara', version: 1, invoices: parsed.invoices }))
     const review = parsed.review && Array.isArray(parsed.review.missingKeys) && Array.isArray(parsed.review.paidSeenKeys)
       ? { missingKeys: parsed.review.missingKeys.filter((key): key is string => typeof key === 'string'), paidSeenKeys: parsed.review.paidSeenKeys.filter((key): key is string => typeof key === 'string') }
       : emptyReview()
-    return { invoices, demo: parsed.demo === true, review }
+    return { invoices, demo: parsed.demo === true, review, raw }
   } catch {
     return raw === null
-      ? { invoices: [], demo: false, review: emptyReview(), warning: 'Browser storage could not be read. Changes may not be saved; export a JSON backup before leaving.' }
-      : { invoices: [], demo: false, review: emptyReview(), warning: 'Saved browser data could not be loaded.', corruptRaw: raw }
+      ? { invoices: [], demo: false, review: emptyReview(), raw, warning: 'Browser storage could not be read. Changes may not be saved; export a JSON backup before leaving.' }
+      : { invoices: [], demo: false, review: emptyReview(), raw, warning: 'Saved browser data could not be loaded.', corruptRaw: raw }
   }
 }
 
@@ -293,6 +297,8 @@ function App() {
   const [demo, setDemo] = useState(saved.demo)
   const [importReview, setImportReview] = useState<ImportReview>(saved.review)
   const [loadBlocked, setLoadBlocked] = useState(saved.corruptRaw !== undefined)
+  const [storageConflict, setStorageConflict] = useState(false)
+  const [conflictBackupDownloaded, setConflictBackupDownloaded] = useState(false)
   const [rawDownloaded, setRawDownloaded] = useState(false)
   const [storageWarning, setStorageWarning] = useState(saved.warning || '')
   const [toast, setToast] = useState<Toast | null>(null)
@@ -307,21 +313,80 @@ function App() {
   const restoreInput = useRef<HTMLInputElement>(null)
   const invoicesRef = useRef(invoices)
   const demoRef = useRef(demo)
+  const lastSavedRawRef = useRef(saved.raw)
+  const lastSubmittedRef = useRef(serializeWorkspace({ invoices: saved.invoices, demo: saved.demo, review: saved.review }))
+  const conflictRef = useRef(false)
   invoicesRef.current = invoices
   demoRef.current = demo
   const asOf = today()
 
+  function markStorageConflict() {
+    if (conflictRef.current) return
+    conflictRef.current = true
+    setStorageConflict(true)
+    if (window.location.hash !== '#/app') window.location.hash = '/app'
+  }
+
   useEffect(() => {
-    if (loadBlocked) return
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ invoices, demo, review: importReview })); setStorageWarning('') }
-    catch { setStorageWarning('Browser storage is unavailable or full. Export a JSON backup before leaving this page.') }
+    if (loadBlocked || conflictRef.current) return
+    const snapshot = { invoices, demo, review: importReview }
+    const serialized = serializeWorkspace(snapshot)
+    if (serialized === lastSubmittedRef.current) return
+    lastSubmittedRef.current = serialized
+    const save = () => {
+      if (conflictRef.current) return
+      try {
+        const result = saveWorkspaceIfCurrent(window.localStorage, lastSavedRawRef.current, snapshot)
+        if (result.kind === 'conflict') { markStorageConflict(); return }
+        lastSavedRawRef.current = result.raw
+        setStorageWarning('')
+      } catch { setStorageWarning('Browser storage is unavailable or full. Export a JSON backup before leaving this page.') }
+    }
+    // Serializes read-check-write across tabs in browsers that support Web Locks.
+    // The storage-event and preflight checks also catch stale writes in older browsers.
+    if (navigator.locks?.request) {
+      void navigator.locks.request(WORKSPACE_STORAGE_KEY, save).catch(() => {
+        setStorageWarning('Browser storage is unavailable. Export a JSON backup before leaving this page.')
+      })
+    } else save()
   }, [invoices, demo, importReview, loadBlocked])
+
+  useEffect(() => {
+    const checkLatest = () => {
+      try {
+        if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) markStorageConflict()
+      } catch { /* The storage warning is handled by the save path. */ }
+    }
+    const onStorage = (event: StorageEvent) => {
+      if ((event.key === WORKSPACE_STORAGE_KEY || event.key === null) && event.newValue !== lastSavedRawRef.current) markStorageConflict()
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') checkLatest() }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', checkLatest)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', checkLatest)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
 
   useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(null), 5500)
     return () => window.clearTimeout(timer)
   }, [toast])
+
+  useEffect(() => {
+    if (storageConflict) setConflictBackupDownloaded(false)
+  }, [invoices, demo, importReview, storageConflict])
+
+  useEffect(() => {
+    if (!storageConflict || conflictBackupDownloaded) return
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    window.addEventListener('beforeunload', warnBeforeLeaving)
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving)
+  }, [storageConflict, conflictBackupDownloaded])
 
   const active = useMemo(() => invoices.filter(item => item.annotation.status !== 'paid'), [invoices])
   const derived = useMemo(() => prioritizeInvoices(invoices, asOf), [invoices, asOf])
@@ -358,8 +423,8 @@ function App() {
 
   async function importCsv(file?: File) {
     if (!file) return
-    if (loadBlocked) {
-      setToast({ text: 'Download the unreadable raw data, then restore or discard it before importing.', kind: 'warn' })
+    if (loadBlocked || storageConflict) {
+      setToast({ text: storageConflict ? 'This tab is paused after another tab changed the workspace. Back up this copy, then load the latest version.' : 'Download the unreadable raw data, then restore or discard it before importing.', kind: 'warn' })
       if (csvInput.current) csvInput.current.value = ''
       return
     }
@@ -388,7 +453,7 @@ function App() {
   }
 
   function confirmImport() {
-    if (!pendingImport || loadBlocked || pendingImport.result.added + pendingImport.result.updated === 0) return
+    if (!pendingImport || loadBlocked || storageConflict || pendingImport.result.added + pendingImport.result.updated === 0) return
     const { result, review } = pendingImport
     setInvoices(result.invoices)
     setDemo(false)
@@ -405,10 +470,13 @@ function App() {
   }
 
   function discardCorruptData() {
-    if (!loadBlocked || !rawDownloaded) return
+    if (!loadBlocked || storageConflict || !rawDownloaded) return
     if (!window.confirm('Discard the unreadable browser data and start with an empty workspace? Keep the raw copy you downloaded in case it can be recovered later.')) return
     try {
-      window.localStorage.removeItem(STORAGE_KEY)
+      if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) { markStorageConflict(); return }
+      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY)
+      lastSavedRawRef.current = null
+      lastSubmittedRef.current = ''
       setInvoices([])
       setDemo(false)
       setImportReview(emptyReview())
@@ -423,18 +491,21 @@ function App() {
   async function restoreBackup(file?: File) {
     if (!file) return
     try {
+      if (storageConflict) throw new Error('Another tab changed this workspace. Back up this tab, then load the latest saved version before restoring.')
       if (loadBlocked && !rawDownloaded) throw new Error('Download the unreadable raw data before restoring a backup.')
       if (file.size > MAX_JSON_BACKUP_BYTES) throw new Error('This JSON backup is over 10 MB. No data was changed. Restore a smaller backup.')
-      const restored = importLedgerJson(await file.text())
+      const restored = importWorkspaceJson(await file.text())
       if ((loadBlocked || (invoices.length && !demo)) && !window.confirm(loadBlocked
-        ? `Replace the unreadable browser data with ${restored.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
-        : `Replace your current ${invoices.length} invoices with ${restored.length} from this backup? Export your current backup first if you may need it.`)) return
-      setInvoices(restored)
-      setDemo(false)
-      setImportReview(emptyReview())
+        ? `Replace the unreadable browser data with ${restored.invoices.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
+        : `Replace your current ${invoices.length} invoices with ${restored.invoices.length} from this backup? Export your current backup first if you may need it.`)) return
+      if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) { markStorageConflict(); return }
+      lastSubmittedRef.current = ''
+      setInvoices(restored.invoices)
+      setDemo(restored.demo)
+      setImportReview(restored.review)
       setLoadBlocked(false)
       setStorageWarning('')
-      setToast({ text: `Restored ${restored.length} invoices from backup.`, kind: 'good' })
+      setToast({ text: `Restored ${restored.invoices.length} invoices from backup.`, kind: 'good' })
     } catch (error) {
       setToast({ text: error instanceof Error ? error.message : 'That backup could not be read.', kind: 'warn' })
     } finally {
@@ -454,16 +525,17 @@ function App() {
     if (demo && !window.confirm('Adding this invoice will replace the sample workspace and any edits made to sample invoices. Continue?')) return 'Sample invoices were kept. No data was changed.'
     setInvoices(result.invoices)
     setDemo(false)
-    setToast({ text: 'Invoice added.', kind: 'good' })
+    setToast(storageConflict ? { text: 'Invoice kept in this tab only. Download a JSON backup before loading the saved version.', kind: 'warn' } : { text: 'Invoice added.', kind: 'good' })
     return null
   }
 
   function updateInvoice(updated: Invoice) {
     setInvoices(current => current.map(item => item.key === updated.key ? updated : item))
-    setToast({ text: 'Invoice updated.', kind: 'good' })
+    setToast(storageConflict ? { text: 'Invoice kept in this tab only. Download a JSON backup before loading the saved version.', kind: 'warn' } : { text: 'Invoice updated.', kind: 'good' })
   }
 
   function deleteInvoice(invoice: Invoice) {
+    if (storageConflict) { setToast({ text: 'Deletion is paused because another tab changed the workspace.', kind: 'warn' }); return false }
     if (!window.confirm(`Delete ${invoice.invoiceNumber} for ${invoice.customer} from this browser? This cannot be undone unless you have a backup.`)) return false
     setInvoices(current => current.filter(item => item.key !== invoice.key))
     setImportReview(current => ({
@@ -475,10 +547,16 @@ function App() {
     return true
   }
 
-  const downloadBackup = () => saveDownload(exportLedgerJson(invoices), `duenara-backup-${asOf}.json`, 'application/json')
+  const downloadBackup = () => saveDownload(exportWorkspaceJson({ invoices, demo, review: importReview }), `duenara-backup-${asOf}.json`, 'application/json')
   const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `duenara-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
 
-  if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked} startSample={() => { if (loadBlocked || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
+  function downloadConflictBackup() {
+    if (saved.corruptRaw !== undefined && loadBlocked) downloadCorruptCopy()
+    else downloadBackup()
+    setConflictBackupDownloaded(true)
+  }
+
+  if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked && !storageConflict} startSample={() => { if (loadBlocked || storageConflict || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
 
   return <div className="app-shell">
     <header className="app-header">
@@ -489,27 +567,34 @@ function App() {
         <div className="app-header-actions">
           <button className="header-link" onClick={() => setShowGuide(true)}><HelpCircle size={17} /> Help</button>
           <button className="header-link" onClick={downloadBackup} disabled={!invoices.length}><ArrowDownToLine size={17} /> Backup</button>
-          <button className="button button-primary button-small" onClick={() => csvInput.current?.click()} disabled={loadBlocked}><FileUp size={17} /> Import CSV</button>
+          <button className="button button-primary button-small" onClick={() => csvInput.current?.click()} disabled={loadBlocked || storageConflict}><FileUp size={17} /> Import CSV</button>
           <button className="mobile-menu app-menu-toggle" aria-label="More actions" aria-expanded={showMobileMenu} onClick={() => setShowMobileMenu(!showMobileMenu)}><MoreHorizontal size={23} /></button>
         </div>
       </div>
-      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup JSON</button><button disabled={loadBlocked} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
+      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup JSON</button><button disabled={loadBlocked || storageConflict} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
     </header>
     <main className="app-main wrap">
       <input ref={csvInput} type="file" accept=".csv,text/csv" className="sr-only" onChange={event => void importCsv(event.target.files?.[0])} aria-label="Import invoice CSV" />
       <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup" />
       <div className="app-title-row">
         <div><span className="kicker">YOUR RECEIVABLES, WITH A PLAN</span><h1>Action board<span className="title-period">.</span></h1><p>Know what is stuck, who is moving it, and when to follow up.</p></div>
-        <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
+        <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked || storageConflict}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
       </div>
 
-      {!loadBlocked && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup JSON <ArrowDownToLine size={15} /></button></div>}
+      {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup JSON <ArrowDownToLine size={15} /></button></div>}
 
-      {storageWarning && !loadBlocked && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span></div>}
-      {demo && <div className="notice demo"><FileSpreadsheet size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
-      {reviewKeys.size > 0 && <div className="notice warning review-notice"><CircleAlert size={19} /><span>{reviewMessage} Confirm status in your ledger.</span><button onClick={() => setFilter('review')}>Review {reviewKeys.size} <ArrowRight size={15} /></button><button onClick={() => { setImportReview(emptyReview()); if (filter === 'review') setFilter('all') }}>Mark reviewed</button></div>}
+      {storageWarning && !loadBlocked && !storageConflict && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span></div>}
+      {demo && !storageConflict && <div className="notice demo"><FileSpreadsheet size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
+      {reviewKeys.size > 0 && !storageConflict && <div className="notice warning review-notice"><CircleAlert size={19} /><span>{reviewMessage} Confirm status in your ledger.</span><button onClick={() => setFilter('review')}>Review {reviewKeys.size} <ArrowRight size={15} /></button><button onClick={() => { setImportReview(emptyReview()); if (filter === 'review') setFilter('all') }}>Mark reviewed</button></div>}
 
-      {loadBlocked ? <section className="recovery-panel" aria-labelledby="recovery-title">
+      {storageConflict ? <section className="recovery-panel conflict-panel" role="alert" aria-labelledby="conflict-title">
+        <div className="recovery-icon"><CircleAlert size={30} /></div>
+        <span className="kicker">WORKSPACE CHANGED IN ANOTHER TAB</span>
+        <h2 id="conflict-title">This tab stopped saving.</h2>
+        <p>{loadBlocked ? 'Another tab changed the browser workspace while this tab was recovering unreadable data. Download the original raw copy from this tab before loading the latest saved version.' : 'Another tab changed the browser workspace. The copy in this tab remains here, including edits you made before this warning. Download its JSON backup before loading the latest saved version. You can then review or restore the backup as needed.'}</p>
+        <div className="recovery-actions"><button className="button button-primary" onClick={downloadConflictBackup}><ArrowDownToLine size={17} /> {conflictBackupDownloaded ? 'Download this tab again' : loadBlocked ? '1. Download original raw copy' : '1. Back up this tab'}</button><button className="button button-secondary" disabled={!conflictBackupDownloaded} onClick={() => window.location.reload()}><ArrowRight size={17} /> 2. Load latest saved version</button></div>
+        {!conflictBackupDownloaded && <small>Loading the saved version unlocks after you download this tab's copy.</small>}
+      </section> : loadBlocked ? <section className="recovery-panel" aria-labelledby="recovery-title">
         <div className="recovery-icon"><CircleAlert size={30} /></div>
         <span className="kicker">DATA RECOVERY</span>
         <h2 id="recovery-title">Your saved data needs attention.</h2>
@@ -550,15 +635,15 @@ function App() {
       </>}
     </main>
 
-    {selected && <InvoiceDrawer key={selected.key} invoice={selected} asOf={asOf} onClose={() => setSelectedKey(null)} onSave={updateInvoice} onDelete={deleteInvoice} onToast={setToast} />}
-    {showAdd && <AddInvoiceModal onClose={() => setShowAdd(false)} onAdd={addInvoice} replacingDemo={demo} />}
+    {selected && <InvoiceDrawer key={selected.key} invoice={selected} asOf={asOf} storageConflict={storageConflict} onClose={() => setSelectedKey(null)} onSave={updateInvoice} onDelete={deleteInvoice} onToast={setToast} />}
+    {showAdd && <AddInvoiceModal onClose={() => setShowAdd(false)} onAdd={addInvoice} replacingDemo={demo} storageConflict={storageConflict} />}
     {showGuide && <GuideModal onClose={() => setShowGuide(false)} onRestore={() => { setShowGuide(false); restoreInput.current?.click() }} />}
-    {pendingImport && <ImportPreviewModal pending={pendingImport} onCancel={() => setPendingImport(null)} onConfirm={confirmImport} />}
+    {pendingImport && <ImportPreviewModal pending={pendingImport} storageConflict={storageConflict} onCancel={() => setPendingImport(null)} onConfirm={confirmImport} />}
     {toast && <div className={`toast ${toast.kind || 'good'}`} role="status"><span>{toast.kind === 'warn' ? <CircleAlert size={18} /> : <CheckCircle2 size={18} />}</span>{toast.text}<button onClick={() => setToast(null)} aria-label="Dismiss message"><X size={15} /></button></div>}
   </div>
 }
 
-function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { invoice: Invoice; asOf: string; onClose: () => void; onSave: (invoice: Invoice) => void; onDelete: (invoice: Invoice) => boolean; onToast: (toast: Toast) => void }) {
+function InvoiceDrawer({ invoice, asOf, storageConflict, onClose, onSave, onDelete, onToast }: { invoice: Invoice; asOf: string; storageConflict: boolean; onClose: () => void; onSave: (invoice: Invoice) => void; onDelete: (invoice: Invoice) => boolean; onToast: (toast: Toast) => void }) {
   const [draft, setDraft] = useState<Invoice>({ ...invoice, annotation: { ...invoice.annotation } })
   const [emailOpen, setEmailOpen] = useState(false)
   const info = deriveInvoice(draft, asOf)
@@ -579,6 +664,7 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
     <div ref={dialogRef} className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
       <div className="drawer-top"><div><span className="drawer-kicker">INVOICE DETAILS</span><h2 id="drawer-title">{draft.invoiceNumber}</h2><p>{draft.customer}</p></div><button className="icon-button" onClick={requestClose} aria-label="Close invoice"><X size={21} /></button></div>
       <div className="drawer-scroll">
+        {storageConflict && <div className="notice warning" role="alert"><CircleAlert size={18} /><span>Another tab changed this workspace. Keep this draft in this tab, then download the tab backup shown behind this panel. It will not save to browser storage.</span></div>}
         <div className="invoice-summary"><div><small>Amount due</small><strong>{dollars(draft.amount)}</strong></div><div><small>Due date</small><strong>{dateLabel(draft.dueDate)}</strong></div><div><small>Age</small><strong className={info.isOverdue ? 'red-ink' : ''}>{info.isOverdue ? `${info.daysOverdue} days late` : 'On time'}</strong></div></div>
         <div className="drawer-section"><div className="section-label"><span>01</span> RESOLUTION STATUS</div><div className="form-grid two"><label>Status<select value={draft.annotation.status} onChange={event => setAnnotation('status', event.target.value as InvoiceAnnotation['status'])}>{Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>What is holding payment?<select value={draft.annotation.blocker} onChange={event => setAnnotation('blocker', event.target.value as InvoiceAnnotation['blocker'])}>{Object.entries(blockerLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label></div></div>
         <div className="drawer-section"><div className="section-label"><span>02</span> NEXT MOVE</div><div className="form-grid"><label>Next action<input value={draft.annotation.nextAction || ''} onChange={event => setAnnotation('nextAction', event.target.value)} placeholder="e.g. Ask AP for the purchase order" /></label><div className="form-grid two"><label>Owner<input value={draft.annotation.owner || ''} onChange={event => setAnnotation('owner', event.target.value)} placeholder="Name or team" /></label><label>Action due<input type="date" value={draft.annotation.nextActionDate || ''} onChange={event => setAnnotation('nextActionDate', event.target.value)} /></label></div></div></div>
@@ -586,12 +672,12 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
         <div className="drawer-section"><div className="section-label"><span>04</span> CONTEXT</div><div className="form-grid"><label>Client email<input type="email" value={draft.email || ''} onChange={event => setDraft(current => ({ ...current, email: event.target.value }))} placeholder="accounts@client.com" /></label><label>Notes<textarea rows={4} value={draft.annotation.notes || ''} onChange={event => setAnnotation('notes', event.target.value)} placeholder="What did the client say? What is needed to resolve this?" /></label></div></div>
         {draft.annotation.status === 'paid' ? <div className="paid-panel"><CheckCircle2 size={18} /><span>Marked paid in this workspace. Confirm receipt in your accounting ledger. Follow-up drafting is disabled.</span></div> : <div className="draft-panel"><div className="draft-heading"><div><Mail size={18} /><strong>Review-before-sending draft</strong></div><button onClick={() => setEmailOpen(!emailOpen)}>{emailOpen ? 'Hide draft' : 'Write draft'} <ArrowRight size={15} /></button></div>{emailOpen && <div className="email-draft"><label>Subject<input readOnly value={email.subject} /></label><label>Message<textarea readOnly rows={9} value={email.body} /></label><div className="draft-actions"><button className="button button-secondary" onClick={() => void copyDraft()}><Copy size={16} /> Copy draft</button>{email.recipient && <a className="button button-quiet" href={`mailto:${encodeURIComponent(email.recipient)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`}>Open email app <ArrowUpRight size={16} /></a>}</div><small>Review the facts, tone, recipient, and invoice record before sending. Nothing is sent automatically.</small></div>}</div>}
       </div>
-      <div className="drawer-bottom"><button className="button button-danger" onClick={() => onDelete(draft)}>Delete invoice</button><span className="drawer-bottom-spacer" /><button className="button button-quiet" onClick={requestClose}>Cancel</button><button className="button button-primary" onClick={() => { onSave(draft); onClose() }}><Check size={18} /> Save changes</button></div>
+      <div className="drawer-bottom"><button className="button button-danger" disabled={storageConflict} onClick={() => onDelete(draft)}>Delete invoice</button><span className="drawer-bottom-spacer" /><button className="button button-quiet" onClick={requestClose}>Cancel</button><button className="button button-primary" onClick={() => { onSave(draft); onClose() }}><Check size={18} /> {storageConflict ? 'Keep for backup' : 'Save changes'}</button></div>
     </div>
   </div>
 }
 
-function ImportPreviewModal({ pending, onCancel, onConfirm }: { pending: PendingImport; onCancel: () => void; onConfirm: () => void }) {
+function ImportPreviewModal({ pending, storageConflict, onCancel, onConfirm }: { pending: PendingImport; storageConflict: boolean; onCancel: () => void; onConfirm: () => void }) {
   const [reviewedIssues, setReviewedIssues] = useState(false)
   const dialogRef = useDialogFocus<HTMLDivElement>(onCancel)
   const { result, review } = pending
@@ -603,21 +689,23 @@ function ImportPreviewModal({ pending, onCancel, onConfirm }: { pending: Pending
     <div ref={dialogRef} className="dialog import-preview" role="dialog" aria-modal="true" aria-labelledby="import-preview-title" aria-describedby="import-preview-description">
       <div className="dialog-head"><div><span className="drawer-kicker">IMPORT PREVIEW</span><h2 id="import-preview-title">Check this CSV first</h2><p id="import-preview-description" className="import-filename">{pending.fileName}</p></div><button type="button" className="icon-button" onClick={onCancel} aria-label="Cancel import"><X size={20} /></button></div>
       <p className="import-intro">Nothing has changed yet. {hasValidRows ? pending.replacingDemo ? 'This import will replace the sample workspace and any sample edits.' : 'Matched invoices will receive the CSV balance, dates and email. Your notes stay attached, and invoices absent from this CSV are kept.' : 'No valid invoices were found. Check the issues below and choose another CSV.'}</p>
+      {sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser data and downloaded backups are not encrypted by Duenara.</p>}
+      {storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Cancel this import, back up this tab, and load the latest saved version.</p>}
       <div className="import-stats" aria-label="Import counts"><div><strong>{result.added}</strong><span>new</span></div><div><strong>{result.updated}</strong><span>updated</span></div><div className={result.skipped ? 'import-stat-alert' : ''}><strong>{result.skipped}</strong><span>skipped</span></div><div><strong>{retained}</strong><span>kept</span></div></div>
       {result.issues.length > 0 && <section className="import-issues" aria-labelledby="import-issues-title"><h3 id="import-issues-title"><CircleAlert size={17} /> {result.issues.length} CSV {result.issues.length === 1 ? 'issue' : 'issues'}</h3><p>Rows with missing or invalid required values and duplicate invoices will be skipped. Other warnings may mean optional information was not imported. Check every item before continuing.</p><ul>{result.issues.map((issue, index) => <li key={`${issue.row}-${index}`}><strong>Line {issue.row}</strong><span>{issue.message}</span></li>)}</ul><label className="import-ack"><input type="checkbox" checked={reviewedIssues} onChange={event => setReviewedIssues(event.target.checked)} /> I reviewed the CSV issues and accept importing the valid rows only.</label></section>}
       {reviewInvoices.length > 0 && <section className="import-reconcile" aria-labelledby="import-reconcile-title"><h3 id="import-reconcile-title"><CircleAlert size={17} /> {reviewInvoices.length} invoices need reconciliation</h3><p>These invoices remain in your workspace and will be flagged for review. Confirm their status in your accounting ledger.</p><ul>{reviewInvoices.map(invoice => <li key={invoice.key}>{invoice.customer} · {invoice.invoiceNumber} — {review.missingKeys.includes(invoice.key) ? 'absent from this CSV' : 'marked paid here but present in this CSV'}</li>)}</ul></section>}
-      <div className="dialog-actions"><button type="button" className="button button-quiet" onClick={onCancel}>Cancel</button><button type="button" className="button button-primary" disabled={!hasValidRows || (result.issues.length > 0 && !reviewedIssues)} onClick={onConfirm}><Check size={17} /> Confirm import</button></div>
+      <div className="dialog-actions"><button type="button" className="button button-quiet" onClick={onCancel}>Cancel</button><button type="button" className="button button-primary" disabled={storageConflict || !hasValidRows || (result.issues.length > 0 && !reviewedIssues)} onClick={onConfirm}><Check size={17} /> Confirm import</button></div>
     </div>
   </div>
 }
 
-function AddInvoiceModal({ onClose, onAdd, replacingDemo }: { onClose: () => void; onAdd: (details: { customer: string; invoiceNumber: string; amount: string; dueDate: string; issueDate: string; email: string }) => string | null; replacingDemo: boolean }) {
+function AddInvoiceModal({ onClose, onAdd, replacingDemo, storageConflict }: { onClose: () => void; onAdd: (details: { customer: string; invoiceNumber: string; amount: string; dueDate: string; issueDate: string; email: string }) => string | null; replacingDemo: boolean; storageConflict: boolean }) {
   const [form, setForm] = useState({ customer: '', invoiceNumber: '', amount: '', dueDate: '', issueDate: '', email: '' })
   const [error, setError] = useState('')
   const requestClose = () => { if (Object.values(form).some(Boolean) && !window.confirm('Discard your unsaved invoice?')) return; onClose() }
   const dialogRef = useDialogFocus<HTMLFormElement>(requestClose)
   const set = (key: keyof typeof form, value: string) => { setForm(current => ({ ...current, [key]: value })); setError('') }
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div><div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> Add invoice</button></div></form></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div>{sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser data and downloaded backups are not encrypted by Duenara.</p>}{storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Keep this form in this tab, then download the tab backup. It will not save to browser storage.</p>}<div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> {storageConflict ? 'Keep for backup' : 'Add invoice'}</button></div></form></div>
 }
 
 function GuideModal({ onClose, onRestore }: { onClose: () => void; onRestore: () => void }) {

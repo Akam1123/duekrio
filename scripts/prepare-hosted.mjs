@@ -45,6 +45,7 @@ for (const file of files) {
   }
   if (path.relative(distRoot, file).replaceAll('\\', '/') === 'privacy/index.html') {
     html = assertOne(html, /<p>The website is currently served by GitHub Pages\.[\s\S]*?<\/p>/g, 'host disclosure', privacyNew)
+    html = assertOne(html, /\s*<div class="note" id="legacy-host-warning">[\s\S]*?<\/div>/g, 'legacy-host warning', '')
   }
   html = html.replaceAll(oldOrigin, publicOrigin).replace(/(["'])\/promiseledger\//g, '$1/')
   if (html.includes(oldOrigin) || /(["'])\/promiseledger\//.test(html)) throw new Error(`Old deployment path remains in ${file}`)

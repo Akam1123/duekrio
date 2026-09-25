@@ -23,6 +23,8 @@ The deployable directory is `dist-hosted/`. The build serves the app and content
 
 For Git integration, connect only `Akam1123/promiseledger`, use `main` as the production branch, choose Node 22, set build command `npm run build:hosted`, output directory `dist-hosted`, and the `PUBLIC_ORIGIN` environment variable to the actual Pages URL. Cloudflare says its Git connection prompts for Git provider authorization, and its project name normally determines the hostname. A new account and GitHub authorization have not been performed in this task.
 
+**Current access blocker:** GitHub is signed out in the browser used for Cloudflare's OAuth flow. The existing Git push credential is sufficient to update the repository but does not create a GitHub browser session or authorize Cloudflare. No Cloudflare account, project, DNS name, or paid plan has been created. A legitimate account-holder sign-in is required before this deployment can proceed; do not copy passwords or authentication codes into project files or chat. The sign-in flow was stopped when passkey authentication was unavailable.
+
 The generated `_headers` includes `X-Robots-Tag: noindex, nofollow` while promotion is paused. Public visitors with the direct URL can still use the app. Remove that only when promotion is authorized and the legal/brand review is complete. The visible Duenara rename retains the legacy browser-storage key and accepts old PromiseLedger JSON backups; a hostname change still requires the export/restore step below.
 
 ## Verification before replacing the old link
