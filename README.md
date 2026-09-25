@@ -4,7 +4,7 @@
 
 Duekrio helps one person handling receivables at a small B2B service firm turn an accounts receivable export into a clear follow-up plan: which invoice needs attention, why it remains unpaid, who owns the next step, and what the customer has promised. It prepares email drafts for a person to review and send through their own email client.
 
-**[Open Duekrio](https://duekrio.pages.dev/)** · [Free AR resources](https://duekrio.pages.dev/resources/) · [Privacy and data storage](https://duekrio.pages.dev/privacy/) · [Use terms](https://duekrio.pages.dev/terms/) · [Read the market thesis](docs/MARKET.md)
+**[Open Duekrio](https://duekrio.pages.dev/)** · [Free AR resources](https://duekrio.pages.dev/resources/) · [Privacy and data storage](https://duekrio.pages.dev/privacy/) · [Use terms](https://duekrio.pages.dev/terms/) · [Private contact](mailto:arielfaber123@gmail.com) · [Read the market thesis](docs/MARKET.md)
 
 **Opening a downloaded copy?** Double-click `index.html`; it opens the self-contained `Duekrio-offline.html` beside it. You can also open that offline file directly. Keep both files together if using the redirect. The live and offline copies have separate browser storage, so export a JSON backup if you move work between them.
 
