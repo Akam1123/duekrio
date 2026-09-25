@@ -64,7 +64,7 @@ See [the product brief](docs/PRODUCT.md) for scope and planned next steps.
 
 ## Hosting and risk review
 
-The current public URL is a prototype. A dedicated-host build with root-path links, Cloudflare privacy copy, and strict security headers is ready for an exact claimed hostname; see [hosting status and verification](docs/HOSTING.md). The [security audit](docs/SECURITY_AUDIT.md), [legal/policy risk review](docs/LEGAL_RISK_REVIEW.md), [design QA](docs/DESIGN_QA.md), and [brand check](docs/BRAND.md) record what has been checked and what remains unresolved. None is a guarantee of legal immunity or a claim that the new hostname is already live.
+The current public URL is a prototype. A dedicated-host build with root-path links, Cloudflare privacy copy, and strict security headers is ready for an exact claimed hostname; see [hosting status and verification](docs/HOSTING.md). The [security audit](docs/SECURITY_AUDIT.md), [legal/policy risk review](docs/LEGAL_RISK_REVIEW.md), [incident response checklist](docs/INCIDENT_RESPONSE.md), [design QA](docs/DESIGN_QA.md), and [brand check](docs/BRAND.md) record what has been checked and what remains unresolved. None is a guarantee of legal immunity or a claim that the new hostname is already live.
 
 ## Launch preparation
 
