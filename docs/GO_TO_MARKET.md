@@ -1,10 +1,10 @@
-# PromiseLedger: first-customer plan
+# Duenara: first-customer plan
 
-Plan drafted 25 September 2026. This document describes future validation and distribution; **no prospects have been contacted and no customers or revenue are claimed**.
+Plan drafted 25 September 2026. Duenara is a provisional name pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
 
 ## Positioning
 
-For small B2B service firms with overdue invoices, PromiseLedger is a focused workspace for recording *why payment is stuck, who owns the next step, and what the customer committed to do*. It starts from an aging-report CSV and leaves invoicing in the firm's existing accounting system. Avoid promising that a reminder sequence or AI will recover a specific percentage of receivables.
+For small B2B service firms with overdue invoices, Duenara is a focused workspace for recording *why payment is stuck, who owns the next step, and what the customer committed to do*. It starts from an aging-report CSV and leaves invoicing in the firm's existing accounting system. Avoid promising that a reminder sequence or AI will recover a specific percentage of receivables.
 
 ## Qualify the first buyer
 
@@ -57,7 +57,7 @@ After 20 qualified interviews, revisit the ICP if fewer than 7 report the specif
 
 ## Measuring value honestly
 
-Capture a baseline during each pilot: open invoices, aging buckets, time spent on weekly follow-up, number of unresolved blockers, and number of commitments missed. Compare the same measures after two cycles. Count cash as recovered only when the buyer confirms payment in the ledger; do not attribute all paid invoices to PromiseLedger. Report self-reported time savings separately from verified payment outcomes. Ask permission before publishing any identifiable result.
+Capture a baseline during each pilot: open invoices, aging buckets, time spent on weekly follow-up, number of unresolved blockers, and number of commitments missed. Compare the same measures after two cycles. Count cash as recovered only when the buyer confirms payment in the ledger; do not attribute all paid invoices to Duenara. Report self-reported time savings separately from verified payment outcomes. Ask permission before publishing any identifiable result.
 
 ## Operating limits for the initial release
 

@@ -39,9 +39,9 @@ const offlineHtml = `<!doctype html>
     <meta name="theme-color" content="#102e34" />
     <meta name="description" content="Turn an aging report into an action plan. Track invoice blockers, owners, payment promises, and the next move in a private workspace." />
     <link rel="icon" type="image/svg+xml" href="${faviconUrl}" />
-    <title>PromiseLedger — Turn overdue invoices into clear next moves</title>
+    <title>Duenara — Turn overdue invoices into clear next moves</title>
     <style>${style}</style>
-    <script>window.__PROMISELEDGER_SAMPLE_CSV_URL__ = ${JSON.stringify(sampleCsvUrl)};</script>
+    <script>window.__DUENARA_SAMPLE_CSV_URL__ = ${JSON.stringify(sampleCsvUrl)};</script>
   </head>
   <body>
     <div id="root"></div>
@@ -51,7 +51,10 @@ const offlineHtml = `<!doctype html>
 `
 
 await Promise.all([
+  writeFile(path.join(projectRoot, 'Duenara-offline.html'), offlineHtml),
+  writeFile(path.join(distRoot, 'Duenara-offline.html'), offlineHtml),
+  // Retain the legacy filename for people who already saved the offline app.
   writeFile(path.join(projectRoot, 'PromiseLedger-offline.html'), offlineHtml),
   writeFile(path.join(distRoot, 'PromiseLedger-offline.html'), offlineHtml),
 ])
-console.log(`Wrote self-contained PromiseLedger-offline.html (${Buffer.byteLength(offlineHtml).toLocaleString()} bytes).`)
+console.log(`Wrote self-contained Duenara-offline.html (${Buffer.byteLength(offlineHtml).toLocaleString()} bytes).`)

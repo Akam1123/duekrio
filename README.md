@@ -1,14 +1,14 @@
-# PromiseLedger
+# Duenara
 
 **A local-first invoice resolution board for small B2B service firms.**
 
-PromiseLedger helps one person handling receivables at a small B2B service firm turn an accounts receivable export into a clear follow-up plan: which invoice needs attention, why it remains unpaid, who owns the next step, and what the customer has promised. It prepares email drafts for a person to review and send through their own email client.
+Duenara helps one person handling receivables at a small B2B service firm turn an accounts receivable export into a clear follow-up plan: which invoice needs attention, why it remains unpaid, who owns the next step, and what the customer has promised. It prepares email drafts for a person to review and send through their own email client.
 
-**[Try the live workspace](https://akam1123.github.io/promiseledger/)** · [Free AR resources](https://akam1123.github.io/promiseledger/resources/) · [Privacy and data storage](https://akam1123.github.io/promiseledger/privacy/) · [Read the market thesis](docs/MARKET.md)
+**[Try the live prototype](https://akam1123.github.io/promiseledger/)** · [Free AR resources](https://akam1123.github.io/promiseledger/resources/) · [Privacy and data storage](https://akam1123.github.io/promiseledger/privacy/) · [Use terms](https://akam1123.github.io/promiseledger/terms/) · [Read the market thesis](docs/MARKET.md)
 
-**Opening a downloaded copy?** Double-click `index.html`; it opens the self-contained `PromiseLedger-offline.html` beside it. You can also open that offline file directly. Keep both files together if using the redirect. The live and offline copies have separate browser storage, so export a JSON backup if you move work between them.
+**Opening a downloaded copy?** Double-click `index.html`; it opens the self-contained `Duenara-offline.html` beside it. You can also open that offline file directly. Keep both files together if using the redirect. The live and offline copies have separate browser storage, so export a JSON backup if you move work between them.
 
-![PromiseLedger action board with fictional sample invoices](docs/images/board.png)
+![Duenara action board with fictional sample invoices](docs/images/board.png)
 
 ## What you can do
 
@@ -52,15 +52,19 @@ These commands run from this repository's root. See `package.json` for the exact
 
 ## Privacy and limits
 
-PromiseLedger is local-first. The prototype has no account, cloud sync, or server-side backup. Working data remains in this browser on this device; clearing browser storage or changing devices can remove access to it. Use the export function to keep a separate backup. Anyone with access to your browser profile may be able to view the stored data, so use a trusted device and avoid importing information you are not authorized to handle.
+Duenara is local-first. The prototype has no account, cloud sync, or server-side backup. Working data remains in this browser on this device; clearing browser storage or changing devices can remove access to it. Use the export function to keep a separate backup. Anyone with access to your browser profile may be able to view the stored data, so use a trusted device and avoid importing information you are not authorized to handle.
 
 If saved browser data cannot be read, the app pauses changes and offers a download of the unreadable data before you choose to restore a valid backup or discard it. That download is a recovery aid, not a guaranteed repair.
 
 An owner name on an invoice is an organizational label. It does not grant access, assign an account, or notify that teammate.
 
-CSV import is a manual snapshot, and some accounting-system exports may need column cleanup. Reimport retains your notes and invoices absent from the new file; absence does not mean an invoice was paid. A persistent review queue flags absent open invoices and locally paid invoices still in the new CSV. PromiseLedger does not connect to QuickBooks or Xero, verify balances against either system, send email, collect payments, or bill customers. Drafts require a human to review them and decide whether to send them. Treat the accounting system as the source of truth.
+CSV import is a manual snapshot, and some accounting-system exports may need column cleanup. Reimport retains your notes and invoices absent from the new file; absence does not mean an invoice was paid. A persistent review queue flags absent open invoices and locally paid invoices still in the new CSV. Duenara does not connect to QuickBooks or Xero, verify balances against either system, send email, collect payments, or bill customers. Drafts require a human to review them and decide whether to send them. Treat the accounting system as the source of truth.
 
 See [the product brief](docs/PRODUCT.md) for scope and planned next steps.
+
+## Hosting and risk review
+
+The current public URL is a prototype. A dedicated-host build with root-path links, Cloudflare privacy copy, and strict security headers is ready for an exact claimed hostname; see [hosting status and verification](docs/HOSTING.md). The [security audit](docs/SECURITY_AUDIT.md), [legal/policy risk review](docs/LEGAL_RISK_REVIEW.md), [design QA](docs/DESIGN_QA.md), and [brand check](docs/BRAND.md) record what has been checked and what remains unresolved. None is a guarantee of legal immunity or a claim that the new hostname is already live.
 
 ## Launch preparation
 

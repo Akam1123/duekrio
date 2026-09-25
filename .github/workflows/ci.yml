@@ -15,6 +15,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run build
-      - run: git diff --exit-code -- PromiseLedger-offline.html
+      - run: git diff --exit-code -- Duenara-offline.html PromiseLedger-offline.html
+      - run: npm run build:hosted
+        env:
+          # Build-only origin. Production must use the exact claimed Pages URL.
+          PUBLIC_ORIGIN: https://akam1123.github.io/

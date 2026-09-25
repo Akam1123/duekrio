@@ -1,14 +1,14 @@
-# PromiseLedger launch system
+# Duenara launch system
 
-Prepared 25 September 2026. The public app is at <https://akam1123.github.io/promiseledger/>.
+Prepared 25 September 2026. Duenara is a provisional name, not trademark-cleared. A branded public URL has not been verified; the old GitHub Pages path is a legacy technical preview, not the address for distribution.
 
-**Status: HOLD. The user explicitly asked not to begin promotion yet.** This plan is prepared for a later, explicit “start promotion” instruction. Until then, do not publish marketing content, post, message anyone, schedule a campaign, or claim a launch result. There are no tasks for the user to complete and no paid spend. The assistant will execute the feasible steps after that instruction, using only existing authorized accounts and the public repo/site; no new account, OAuth connection, mailing list, or ad budget is assumed.
+**Status: HOLD. The user explicitly asked not to begin promotion yet.** This plan is prepared for a later, explicit “start promotion” instruction. Until then, do not publish marketing content, post, message anyone, schedule a campaign, or claim a launch result. Before distribution, verify the brand, legally suitable host, branded URL, and live product. There are no tasks for the user to complete and no paid spend. The assistant will execute feasible steps after that instruction through available authorized channels; no new account, OAuth connection, mailing list, or ad budget is assumed.
 
 ## One sentence buyers can repeat
 
-**Turn an accounts receivable aging CSV into a clear next-action list for the invoices that standard reminders have not resolved.** PromiseLedger records the blocker, owner, next step, and payment promise beside each invoice. It drafts follow-ups for a person to review and send.
+**Turn an accounts receivable aging CSV into a clear next-action list for the invoices that standard reminders have not resolved.** Duenara records the blocker, owner, next step, and payment promise beside each invoice. It drafts follow-ups for a person to review and send.
 
-The first buyer is the owner, operations lead, or bookkeeper at a small US B2B service firm who currently runs weekly AR follow-up in a spreadsheet and inbox. The site is in English, accepts USD and US-style dates, and has a public, free demo. It has no account system, sync, automatic email, or accounting integration. Browser storage can be lost; users should export a backup. The accounting system remains the source of truth.
+The first buyer is the owner, operations lead, or bookkeeper at a small US B2B service firm who currently runs weekly AR follow-up in a spreadsheet and inbox. The current prototype is in English and accepts USD and US-style dates. Its branded public address remains to be verified before use in external copy. It has no account system, sync, automatic email, or accounting integration. Browser storage can be lost; users should export a backup. The accounting system remains the source of truth.
 
 ## Distribution hypothesis
 
@@ -16,7 +16,7 @@ Lead with the **AR exception workflow**, not generic invoice reminders: QuickBoo
 
 After the start instruction, use channels in this order:
 
-1. **Owned site and repository (baseline):** Verify current GitHub access, the live app, and shipped features. Publish or improve one genuinely useful guide, “How to turn an AR aging report into a weekly action list,” on the existing free GitHub Pages site, with a link to the demo. Check the existing page title, description, canonical URL, sitemap, and internal links; change only what needs work. Update the repository README and release notes with the same accurate message. The assistant can do this through the existing repo deployment path; it does not require the user to create an account. The guide copy is in [ASSETS.md](ASSETS.md). Organic search is a long-term channel, not a four-week traffic promise.
+1. **Owned site and repository (baseline):** Verify a host that permits the intended commercial use, the branded URL, current GitHub access, the live app, and shipped features. Publish or improve one genuinely useful guide, “How to turn an AR aging report into a weekly action list,” on that verified site, with a link to the demo. Check the page title, description, canonical URL, sitemap, and internal links. Update the repository README with the same accurate message. The guide draft is in [ASSETS.md](ASSETS.md). Organic search is a long-term channel, not a four-week traffic promise.
 2. **Existing, authorized discovery surfaces (conditional):** Inspect which relevant accounts are already accessible without connection or setup. Use an existing business-owned profile or legitimate community account only if authorization, channel rules, and a relevant conversation are clear. The assistant may publish a manually reviewed, useful post or reply; it must not automate LinkedIn activity, scrape contacts, or impersonate a person. [LinkedIn prohibits unauthorized automation](https://www.linkedin.com/help/linkedin/answer/a1341387/prohibited-software-and-extensions). If no suitable account exists, skip this channel without asking the user to set one up.
 3. **Expected one-to-one contact (conditional):** Respond to inbound requests or introductions that the recipient agreed to receive, if an authorized messaging channel and real sender identity already exist. The assistant can tailor the draft and handle replies within the granted authority. No scraped leads, purchased lists, mass mail, or raw invoice exports. If the conditions are absent, skip outreach and keep working on the owned site.
 
@@ -28,12 +28,12 @@ The sequence begins only after an explicit start instruction. The assistant owns
 
 | Week | Ship once | Distribution work | Evidence to record |
 | --- | --- | --- | --- |
-| 1 | Recheck the live product, publish or improve the guide and accurate metadata on the existing Pages site, add a fictional screenshot if useful, and update the README. | Inspect existing account access. Publish one relevant post only through an authorized channel that permits it. Otherwise use the owned site and repo only. | Exact URLs and dates, deployment result, indexability checks, replies if any. |
+| 1 | Recheck the live product, publish or improve the guide and accurate metadata on the verified owned site, add a fictional screenshot if useful, and update the README. | Inspect existing account access. Publish one relevant post only through an authorized channel that permits it. Otherwise use the owned site and repo only. | Exact URLs and dates, deployment result, indexability checks, replies if any. |
 | 2 | Record a short screen demo with fictional data and captions; publish it on the owned site if it improves onboarding. Fix any first-use defect visible in browser testing or genuine feedback. | Answer relevant inbound questions or allowed community questions through already available channels; no unsolicited batch outreach. | Inbound questions, product friction, available platform metrics, `unknown` for unobservable usage. |
 | 3 | Publish a second short guide only if real questions or search data show a distinct need; otherwise improve the first guide. | Offer a pilot only to a qualified person who has engaged and wants it. If no such person exists, continue useful site work. | Qualified conversations and agreed pilot starts, if any; no invented activation data. |
 | 4 | Make the highest-value copy or product correction supported by evidence and publish a concise changelog. | Follow up only where a reply or permission exists. Review whether a repeatable free channel produced qualified interest. | Second-cycle pilot use, stated-price response, or a candid record that those signals are not yet available. |
 
-There is no quota to send messages. Stop after no reply or an opt-out. The next cycle should focus on the channel that produces *qualified* conversations rather than the highest impression count. If access remains limited to GitHub Pages and the repository, the plan can publish useful owned content but cannot honestly claim broad distribution or customer validation.
+There is no quota to send messages. Stop after no reply or an opt-out. The next cycle should focus on the channel that produces *qualified* conversations rather than the highest impression count. If access remains limited to the repository and a compliant owned site, the plan can publish useful owned content but cannot honestly claim broad distribution or customer validation.
 
 ## Search and content map
 

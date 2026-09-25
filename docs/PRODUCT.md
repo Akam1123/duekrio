@@ -1,8 +1,10 @@
 # Product brief
 
+Duenara is the provisional name for this working prototype. It is not trademark-cleared, and marketing is on hold.
+
 ## Problem and user
 
-Small B2B service firms often have open invoices spread across an accounting report, an inbox, and individual teammates' notes. The AR balance identifies what is unpaid, but it does not always capture the reason or the next human action. PromiseLedger is for a 5–30 person team whose founder, operations lead, or finance coordinator owns customer follow-up.
+Small B2B service firms often have open invoices spread across an accounting report, an inbox, and individual teammates' notes. The AR balance identifies what is unpaid, but it does not always capture the reason or the next human action. Duenara is for a 5–30 person team whose founder, operations lead, or finance coordinator owns customer follow-up.
 
 ## Product promise
 

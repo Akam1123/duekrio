@@ -162,6 +162,8 @@ describe('exports', () => {
       annotation: { status: 'in_progress', blocker: 'cash_flow', owner: 'Maya', promiseDate: '2026-10-01', notes: 'Follow up.' },
     })
     expect(importLedgerJson(exportLedgerJson([row]))).toEqual([row])
+    expect(JSON.parse(exportLedgerJson([row])).format).toBe('duenara')
+    expect(importLedgerJson(JSON.stringify({ format: 'promiseledger', version: 1, invoices: [row] }))).toEqual([row])
     expect(() => importLedgerJson('{"format":"promiseledger","version":2,"invoices":[]}')).toThrow('Unsupported')
     const altered = JSON.parse(exportLedgerJson([row]))
     altered.invoices[0].amount = -100

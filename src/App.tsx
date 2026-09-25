@@ -22,7 +22,6 @@ import {
   Plus,
   Search,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
   X,
 } from 'lucide-react'
@@ -43,9 +42,13 @@ type ImportReview = { missingKeys: string[]; paidSeenKeys: string[] }
 type PendingImport = { fileName: string; result: CsvImportResult; review: ImportReview; replacingDemo: boolean }
 const emptyReview = (): ImportReview => ({ missingKeys: [], paidSeenKeys: [] })
 
+// Preserve this legacy key so an existing browser keeps its saved workspace.
 const STORAGE_KEY = 'promiseledger.workspace.v1'
 const MAX_CSV_BYTES = 2 * 1024 * 1024
-const sampleCsvUrl = (window as Window & { __PROMISELEDGER_SAMPLE_CSV_URL__?: string }).__PROMISELEDGER_SAMPLE_CSV_URL__
+// Leave room for notes and non-ASCII text in a valid browser-storage backup,
+// while rejecting unexpectedly large files before reading or parsing them.
+const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024
+const sampleCsvUrl = (window as Window & { __DUENARA_SAMPLE_CSV_URL__?: string }).__DUENARA_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
 const contentBaseUrl = window.location.protocol === 'file:' ? 'https://akam1123.github.io/promiseledger/' : import.meta.env.BASE_URL
 const today = () => {
@@ -189,9 +192,9 @@ function useRoute(): [View, (view: View) => void] {
 }
 
 function Brand({ onClick }: { onClick: () => void }) {
-  return <button className="brand" onClick={onClick} aria-label="PromiseLedger home">
+  return <button className="brand" onClick={onClick} aria-label="Duenara home">
     <span className="brand-mark"><span /></span>
-    <span>promise<span className="brand-soft">ledger</span></span>
+    <span>Due<span className="brand-soft">nara</span></span>
   </button>
 }
 
@@ -215,17 +218,17 @@ function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => voi
         <div className="hero-copy">
           <div className="eyebrow"><span className="eyebrow-dot" /> A clearer way to work your receivables</div>
           <h1>Every unpaid invoice has a reason. <em>Give it a next move.</em></h1>
-          <p className="hero-intro">An aging report tells you what is overdue. PromiseLedger helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
+          <p className="hero-intro">An aging report tells you what is overdue. Duenara helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
           <div className="hero-actions">
             <button className="button button-primary button-large" onClick={openApp}>Open free workspace <ArrowRight size={19} /></button>
             {sampleAvailable ? <button className="text-link text-link-button" onClick={startSample}>Explore sample data <ArrowRight size={17} /></button> : <a className="text-link" href="#how-it-works">See how it works <ArrowDownToLine size={17} /></a>}
           </div>
           <div className="hero-trust"><ShieldCheck size={17} /><span>No account · No bank connection · Browser-only storage. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span></div>
         </div>
-        <div className="hero-visual" aria-label="Illustration of the PromiseLedger action board">
+        <div className="hero-visual" aria-label="Illustration of the Duenara action board">
           <div className="visual-glow" />
           <div className="mock-window">
-            <div className="mock-top"><span className="mock-icon">p</span><span>Action queue</span><span className="mock-pill">Illustrative data</span></div>
+            <div className="mock-top"><span className="mock-icon">d</span><span>Action queue</span><span className="mock-pill">Illustrative data</span></div>
             <div className="mock-metrics"><div><small>Open balance</small><strong>$24,700</strong></div><div><small>Needs a next move</small><strong>03 <span>invoices</span></strong></div></div>
             <div className="mock-row"><div className="mock-avatar coral">N</div><div className="mock-name"><strong>Northstar Studio</strong><small>INV-1042 · 19 days overdue</small></div><span className="mock-tag red">Missing PO</span><strong>$4,800</strong></div>
             <div className="mock-row"><div className="mock-avatar sage">F</div><div className="mock-name"><strong>Fieldstone Partners</strong><small>INV-1068 · 11 days overdue</small></div><span className="mock-tag amber">Dispute</span><strong>$7,200</strong></div>
@@ -255,13 +258,13 @@ function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => voi
 
       <section className="section wrap resources-section" aria-labelledby="resources-title">
         <div className="section-heading"><div><span className="kicker">FREE PRACTICAL GUIDES</span><h2 id="resources-title">Build a better follow-up habit.</h2></div><p>Useful even if you keep working in a spreadsheet. Each guide uses fictional examples and puts a person in control.</p></div>
-        <div className="resource-grid"><a href={`${contentBaseUrl}resources/weekly-ar-review-checklist/`} className="resource-card"><span>WORKFLOW GUIDE</span><h3>Weekly AR review checklist</h3><p>From a current aging report to one owner and one next action for every exception.</p><b>Read the checklist <ArrowRight size={17} /></b></a><a href={`${contentBaseUrl}resources/overdue-invoice-email-templates/`} className="resource-card"><span>COMMUNICATION GUIDE</span><h3>Overdue invoice email templates</h3><p>Copyable, human-reviewed messages for a status check, a missing document, and a payment promise.</p><b>See the templates <ArrowRight size={17} /></b></a></div>
+        <div className="resource-grid"><a href={`${contentBaseUrl}resources/weekly-ar-review-checklist/`} className="resource-card"><span>WORKFLOW GUIDE</span><h3>Weekly AR review checklist</h3><p>From a current aging report to one owner and one next action for every exception.</p><b>Read the checklist <ArrowRight size={17} /></b></a><a href={`${contentBaseUrl}resources/overdue-invoice-email-templates/`} className="resource-card"><span>COMMUNICATION GUIDE</span><h3>Overdue invoice email templates</h3><p>Copyable messages to edit and review for a status check, a missing document, and a payment promise.</p><b>See the templates <ArrowRight size={17} /></b></a></div>
       </section>
 
-      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>PromiseLedger is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does PromiseLedger send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
+      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>Duenara is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does Duenara send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
     </main>
 
-    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
+    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href={`${contentBaseUrl}terms/`}>Use terms</a><a href="https://github.com/Akam1123/promiseledger" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
   </div>
 }
 
@@ -271,7 +274,7 @@ function loadSaved(): { invoices: Invoice[]; demo: boolean; review: ImportReview
     raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw === null) return { invoices: [], demo: false, review: emptyReview() }
     const parsed = JSON.parse(raw) as { invoices?: unknown; demo?: unknown; review?: Partial<ImportReview> }
-    const invoices = importLedgerJson(JSON.stringify({ format: 'promiseledger', version: 1, invoices: parsed.invoices }))
+    const invoices = importLedgerJson(JSON.stringify({ format: 'duenara', version: 1, invoices: parsed.invoices }))
     const review = parsed.review && Array.isArray(parsed.review.missingKeys) && Array.isArray(parsed.review.paidSeenKeys)
       ? { missingKeys: parsed.review.missingKeys.filter((key): key is string => typeof key === 'string'), paidSeenKeys: parsed.review.paidSeenKeys.filter((key): key is string => typeof key === 'string') }
       : emptyReview()
@@ -397,7 +400,7 @@ function App() {
 
   function downloadCorruptCopy() {
     if (saved.corruptRaw === undefined) return
-    saveDownload(saved.corruptRaw, `promiseledger-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
+    saveDownload(saved.corruptRaw, `duenara-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
     setRawDownloaded(true)
   }
 
@@ -421,6 +424,7 @@ function App() {
     if (!file) return
     try {
       if (loadBlocked && !rawDownloaded) throw new Error('Download the unreadable raw data before restoring a backup.')
+      if (file.size > MAX_JSON_BACKUP_BYTES) throw new Error('This JSON backup is over 10 MB. No data was changed. Restore a smaller backup.')
       const restored = importLedgerJson(await file.text())
       if ((loadBlocked || (invoices.length && !demo)) && !window.confirm(loadBlocked
         ? `Replace the unreadable browser data with ${restored.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
@@ -471,8 +475,8 @@ function App() {
     return true
   }
 
-  const downloadBackup = () => saveDownload(exportLedgerJson(invoices), `promiseledger-backup-${asOf}.json`, 'application/json')
-  const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `promiseledger-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
+  const downloadBackup = () => saveDownload(exportLedgerJson(invoices), `duenara-backup-${asOf}.json`, 'application/json')
+  const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `duenara-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
 
   if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked} startSample={() => { if (loadBlocked || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
 
@@ -502,7 +506,7 @@ function App() {
       {!loadBlocked && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup JSON <ArrowDownToLine size={15} /></button></div>}
 
       {storageWarning && !loadBlocked && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span></div>}
-      {demo && <div className="notice demo"><Sparkles size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
+      {demo && <div className="notice demo"><FileSpreadsheet size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
       {reviewKeys.size > 0 && <div className="notice warning review-notice"><CircleAlert size={19} /><span>{reviewMessage} Confirm status in your ledger.</span><button onClick={() => setFilter('review')}>Review {reviewKeys.size} <ArrowRight size={15} /></button><button onClick={() => { setImportReview(emptyReview()); if (filter === 'review') setFilter('all') }}>Mark reviewed</button></div>}
 
       {loadBlocked ? <section className="recovery-panel" aria-labelledby="recovery-title">
@@ -542,7 +546,7 @@ function App() {
             </tr>)}
           </tbody></table>{rows.length === 0 && <div className="no-results"><Inbox size={28} /><strong>No invoices match this view.</strong><span>Try another filter or search.</span></div>}</div>
         </section>
-        <div className="workspace-footer"><div><LockKeyhole size={15} /> Stored in this browser only. Back up regularly.</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href="https://github.com/Akam1123/promiseledger/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
+        <div className="workspace-footer"><div><LockKeyhole size={15} /> Stored in this browser only. Back up regularly.</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href={`${contentBaseUrl}terms/`}>Use terms</a><span>·</span><a href="https://github.com/Akam1123/promiseledger/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
       </>}
     </main>
 
@@ -580,7 +584,7 @@ function InvoiceDrawer({ invoice, asOf, onClose, onSave, onDelete, onToast }: { 
         <div className="drawer-section"><div className="section-label"><span>02</span> NEXT MOVE</div><div className="form-grid"><label>Next action<input value={draft.annotation.nextAction || ''} onChange={event => setAnnotation('nextAction', event.target.value)} placeholder="e.g. Ask AP for the purchase order" /></label><div className="form-grid two"><label>Owner<input value={draft.annotation.owner || ''} onChange={event => setAnnotation('owner', event.target.value)} placeholder="Name or team" /></label><label>Action due<input type="date" value={draft.annotation.nextActionDate || ''} onChange={event => setAnnotation('nextActionDate', event.target.value)} /></label></div></div></div>
         <div className="drawer-section"><div className="section-label"><span>03</span> PAYMENT COMMITMENT</div><div className="form-grid two"><label>Promised payment date<input type="date" value={draft.annotation.promiseDate || ''} onChange={event => setAnnotation('promiseDate', event.target.value)} /></label><label>Last contact<input type="date" value={draft.annotation.lastContactDate || ''} onChange={event => setAnnotation('lastContactDate', event.target.value)} /></label></div><p className="field-hint">A promised date is a customer statement, not a guaranteed payment.</p></div>
         <div className="drawer-section"><div className="section-label"><span>04</span> CONTEXT</div><div className="form-grid"><label>Client email<input type="email" value={draft.email || ''} onChange={event => setDraft(current => ({ ...current, email: event.target.value }))} placeholder="accounts@client.com" /></label><label>Notes<textarea rows={4} value={draft.annotation.notes || ''} onChange={event => setAnnotation('notes', event.target.value)} placeholder="What did the client say? What is needed to resolve this?" /></label></div></div>
-        {draft.annotation.status === 'paid' ? <div className="paid-panel"><CheckCircle2 size={18} /><span>Marked paid in this workspace. Confirm receipt in your accounting ledger. Follow-up drafting is disabled.</span></div> : <div className="draft-panel"><div className="draft-heading"><div><Mail size={18} /><strong>Human-reviewed follow-up</strong></div><button onClick={() => setEmailOpen(!emailOpen)}>{emailOpen ? 'Hide draft' : 'Write draft'} <ArrowRight size={15} /></button></div>{emailOpen && <div className="email-draft"><label>Subject<input readOnly value={email.subject} /></label><label>Message<textarea readOnly rows={9} value={email.body} /></label><div className="draft-actions"><button className="button button-secondary" onClick={() => void copyDraft()}><Copy size={16} /> Copy draft</button>{email.recipient && <a className="button button-quiet" href={`mailto:${encodeURIComponent(email.recipient)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`}>Open email app <ArrowUpRight size={16} /></a>}</div><small>Review the facts, tone, recipient, and invoice record before sending. Nothing is sent automatically.</small></div>}</div>}
+        {draft.annotation.status === 'paid' ? <div className="paid-panel"><CheckCircle2 size={18} /><span>Marked paid in this workspace. Confirm receipt in your accounting ledger. Follow-up drafting is disabled.</span></div> : <div className="draft-panel"><div className="draft-heading"><div><Mail size={18} /><strong>Review-before-sending draft</strong></div><button onClick={() => setEmailOpen(!emailOpen)}>{emailOpen ? 'Hide draft' : 'Write draft'} <ArrowRight size={15} /></button></div>{emailOpen && <div className="email-draft"><label>Subject<input readOnly value={email.subject} /></label><label>Message<textarea readOnly rows={9} value={email.body} /></label><div className="draft-actions"><button className="button button-secondary" onClick={() => void copyDraft()}><Copy size={16} /> Copy draft</button>{email.recipient && <a className="button button-quiet" href={`mailto:${encodeURIComponent(email.recipient)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`}>Open email app <ArrowUpRight size={16} /></a>}</div><small>Review the facts, tone, recipient, and invoice record before sending. Nothing is sent automatically.</small></div>}</div>}
       </div>
       <div className="drawer-bottom"><button className="button button-danger" onClick={() => onDelete(draft)}>Delete invoice</button><span className="drawer-bottom-spacer" /><button className="button button-quiet" onClick={requestClose}>Cancel</button><button className="button button-primary" onClick={() => { onSave(draft); onClose() }}><Check size={18} /> Save changes</button></div>
     </div>
@@ -618,7 +622,7 @@ function AddInvoiceModal({ onClose, onAdd, replacingDemo }: { onClose: () => voi
 
 function GuideModal({ onClose, onRestore }: { onClose: () => void; onRestore: () => void }) {
   const dialogRef = useDialogFocus<HTMLDivElement>(onClose)
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with PromiseLedger</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>This workspace lives in your browser's local storage. It has no login or team sync. Use Backup JSON often and store the file according to your firm's security policy. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Duenara</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>This workspace lives in your browser's local storage. It has no login or team sync. Use Backup JSON often and store the file according to your firm's security policy. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
 }
 
 export default App

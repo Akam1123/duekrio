@@ -392,7 +392,7 @@ export function exportInvoicesCsv(invoices: Invoice[]): string {
 }
 
 export function exportLedgerJson(invoices: Invoice[]): string {
-  return JSON.stringify({ format: 'promiseledger', version: 1, invoices }, null, 2)
+  return JSON.stringify({ format: 'duenara', version: 1, invoices }, null, 2)
 }
 
 function requireString(value: unknown, field: string): string {
@@ -435,7 +435,8 @@ export function importLedgerJson(json: string): Invoice[] {
   }
   if (!parsed || typeof parsed !== 'object') throw new Error('Invalid ledger backup')
   const payload = parsed as Record<string, unknown>
-  if (payload.format !== 'promiseledger' || payload.version !== 1 || !Array.isArray(payload.invoices)) {
+  // Keep old PromiseLedger backup files importable after the visible rebrand.
+  if (!['duenara', 'promiseledger'].includes(payload.format as string) || payload.version !== 1 || !Array.isArray(payload.invoices)) {
     throw new Error('Unsupported ledger backup format')
   }
   const seen = new Set<string>()

@@ -1,11 +1,12 @@
 {
-  "name": "promiseledger",
+  "name": "duenara",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/build-offline.mjs",
+    "build:hosted": "tsc -b && vite build --base=/ --outDir dist-hosted && node scripts/prepare-hosted.mjs",
     "build:offline": "node scripts/build-offline.mjs",
     "preview": "vite preview",
     "test": "vitest run",

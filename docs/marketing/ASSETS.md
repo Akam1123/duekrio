@@ -1,6 +1,8 @@
 # Prepared launch creative — hold
 
-The user has explicitly said not to begin promotion yet. These are prepared drafts, not published posts or sent messages. After a later explicit start instruction, the assistant must verify the shipped site and distribute only through existing authorized free channels. The live demo URL is <https://akam1123.github.io/promiseledger/>. “Free” describes current access to the prototype; it is not a forever-pricing promise. All examples below use fictional situations.
+The user has explicitly said not to begin promotion yet. These are prepared drafts, not published posts or sent messages. Duenara is a provisional name, not trademark-cleared. `[VERIFIED_LIVE_URL]` is a literal placeholder, not a live address: replace it only after a compliant host and the branded site have been verified. Do not publish any draft while the placeholder remains. “Free” describes current access to the prototype; it is not a forever-pricing promise. All examples below use fictional situations.
+
+Prepared artwork: [Duenara social square](../../public/media/duenara-social-square.png) and [Open Graph preview](../../public/og-card.png). Neither has been posted.
 
 ## Core copy
 
@@ -16,13 +18,13 @@ The user has explicitly said not to begin promotion yet. These are prepared draf
 
 **Trust line:** No accounting login. No automatic emails. Data stays in this browser; export a backup and confirm balances in your accounting system.
 
-**Search title:** AR Aging Follow-Up Board for Small B2B Teams | PromiseLedger
+**Search title:** AR Aging Follow-Up Board for Small B2B Teams | Duenara
 
 **Meta description:** Turn an AR aging CSV into a clear invoice follow-up plan. Track blockers, owners, next actions, and payment promises. Explore a free sample board.
 
 **Five-second product description:** A local-first action board for overdue B2B invoices. Start with a CSV, then record the human context an aging report misses.
 
-## One publishable guide
+## Prepared guide draft
 
 **Title: How to turn an AR aging report into a weekly action list**
 
@@ -44,7 +46,7 @@ Before sending a follow-up, compare the invoice with the current ledger and rece
 
 At the next weekly review, close completed actions, deliberately reschedule unfinished ones, and reconcile the list with a fresh accounting export. If an invoice disappears from the new file, investigate rather than assuming it was paid. If it remains after you marked it paid locally, verify the ledger before contacting the customer.
 
-PromiseLedger is a free prototype for running this workflow beside your accounting system. Import a flat AR CSV, capture blockers and next steps, draft a message for review, and export a backup. It stores work in your browser on your device; there is no account or cloud sync. [Explore the fictional sample board](https://akam1123.github.io/promiseledger/) before using a real export.
+Duenara is a free prototype for running this workflow beside your accounting system. Import a flat AR CSV, capture blockers and next steps, draft a message for review, and export a backup. It stores work in your browser on your device; there is no account or cloud sync. Explore the fictional sample board at [VERIFIED_LIVE_URL] before using a real export.
 
 **Editorial note:** This guide is a workflow example, not accounting or legal advice. Add an author/date and a screenshot of the fictional sample board on publication. If citing market prevalence, use the [QuickBooks 2026 late-payments report](https://quickbooks.intuit.com/r/small-business-data/small-business-late-payments-report-2026/) with its vendor-survey caveat; no market statistic is needed for the guide to be useful.
 
@@ -56,9 +58,9 @@ An AR aging report can tell you that an invoice is 35 days overdue. It usually c
 
 That distinction changes the next step. Another reminder may be pointless; sending the corrected invoice is useful.
 
-I built PromiseLedger to keep four things together for each open invoice: the blocker, the owner, the next action, and any promised payment date. It starts with a CSV export and drafts follow-ups for a person to review. No accounting login or automatic sending.
+I built Duenara to keep four things together for each open invoice: the blocker, the owner, the next action, and any promised payment date. It starts with a CSV export and drafts follow-ups for a person to review. No accounting login or automatic sending.
 
-Here is the free demo with fictional data: https://akam1123.github.io/promiseledger/
+Here is the free demo with fictional data: [VERIFIED_LIVE_URL]
 
 If you run weekly AR follow-up for a small B2B service firm, what information do you still keep outside your accounting system?
 
@@ -74,15 +76,15 @@ Before the next overdue-invoice meeting, try this five-column list:
 
 The useful change is replacing “chase customer” with a task like “send corrected PO reference by Thursday.” Check balances and payment status in your accounting system before contacting anyone.
 
-I wrote a short guide and built a free board for the workflow: https://akam1123.github.io/promiseledger/
+I wrote a short guide and built a free board for the workflow: [VERIFIED_LIVE_URL]
 
 ### Post 3 — product walkthrough
 
 I wanted an invoice follow-up tool that could start from an AR export without asking for accounting credentials.
 
-In PromiseLedger you import a flat CSV, review the open invoices, record the blocker and owner, and prepare a short follow-up draft. The draft is yours to check and send. The app runs in your browser; export a backup because there is no cloud sync.
+In Duenara you import a flat CSV, review the open invoices, record the blocker and owner, and prepare a short follow-up draft. The draft is yours to check and send. The app runs in your browser; export a backup because there is no cloud sync.
 
-Try the fictional sample first: https://akam1123.github.io/promiseledger/
+Try the fictional sample first: [VERIFIED_LIVE_URL]
 
 This is an early public prototype. I am looking for feedback on the import and weekly review workflow, especially from small B2B service teams and bookkeepers.
 
@@ -102,7 +104,7 @@ Hi [name],
 
 [Mutual contact] suggested you might have a useful view on how small service firms handle overdue invoices that need more than an automatic reminder. I built a free prototype that turns an AR aging CSV into a list of blockers, owners, next actions, and payment promises.
 
-Would you be open to a 15-minute critique of the workflow? The fictional sample is here: https://akam1123.github.io/promiseledger/ . There is no need to send me a client's invoices.
+Would you be open to a 15-minute critique of the workflow? The fictional sample is here: [VERIFIED_LIVE_URL] . There is no need to send me a client's invoices.
 
 If this is not relevant, no reply needed.
 
@@ -116,7 +118,7 @@ Hi [name],
 
 Thanks for looking at the demo. My notes were that [specific challenge they mentioned, without confidential amounts or names]. I updated/plan to test [one precise action].
 
-The sample board is here: https://akam1123.github.io/promiseledger/ . If you decide to try your own export, verify the column mapping and use Backup afterward; it stays in that browser and does not sync to other devices.
+The sample board is here: [VERIFIED_LIVE_URL] . If you decide to try your own export, verify the column mapping and use Backup afterward; it stays in that browser and does not sync to other devices.
 
 Would a two-week test across your next two AR reviews be useful? I can learn from the steps that feel slow without receiving your raw invoice file.
 
@@ -132,7 +134,7 @@ I am testing a small tool for B2B teams whose aging report shows *what* is late 
 
 If you know one owner or bookkeeper who already handles this in a spreadsheet and would welcome a short critique request, would you ask whether they want an introduction? Please do not forward any client invoice data.
 
-Demo: https://akam1123.github.io/promiseledger/
+Demo: [VERIFIED_LIVE_URL]
 
 [Real name]
 
@@ -146,4 +148,4 @@ Demo: https://akam1123.github.io/promiseledger/
 
 **32–40s:** Show export backup. Say, “This prototype stores work in your browser, so keep a backup and verify balances in your accounting ledger.”
 
-**40–45s:** “Try the free fictional sample at PromiseLedger.” Display the public URL. Use captions and a real screen recording; no fabricated customer outcome.
+**40–45s:** “Try the free fictional sample at Duenara.” Display the public URL. Use captions and a real screen recording; no fabricated customer outcome.
