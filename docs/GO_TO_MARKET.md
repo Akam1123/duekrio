@@ -1,6 +1,6 @@
 # Duekrio: first-customer plan
 
-Plan drafted 25 September 2026. Duekrio is a free prototype with a Cloudflare Pages project prepared at [duekrio.pages.dev](https://duekrio.pages.dev/); the rebranded release requires upload and live verification. The name remains provisional pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
+Plan drafted 25 September 2026. Duekrio is a free prototype live at [duekrio.pages.dev](https://duekrio.pages.dev/) on Cloudflare Pages; point-in-time release checks are in [HOSTING.md](HOSTING.md). The name remains provisional pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
 
 ## Positioning
 

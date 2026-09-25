@@ -1,6 +1,6 @@
 # Duekrio: where to promote, and how to test it
 
-Research checked 25 September 2026. **Planning only: no outreach, social post, search submission, or paid campaign has been sent.** The previous Duenara site and resource pages are publicly reachable with `noindex, nofollow`; the new Duekrio release still needs upload and verification. That tag is an indexing instruction, not access control. The user asked to finish the site, payments, and safety work before promotion. This is a zero-cash plan for reaching operators at small US B2B service firms who personally handle overdue invoice exceptions. Rankings are hypotheses about buyer fit, not measured conversion rates or promises of reach.
+Research checked 25 September 2026. **Planning only: no outreach, social post, search submission, or paid campaign has been sent.** Duekrio is publicly reachable at [https://duekrio.pages.dev/](https://duekrio.pages.dev/) and the prior Duenara address remains available for migration; both send `noindex, nofollow` while promotion is held. That instruction is for indexing, not access control. The user asked to finish the site, payments, and safety work before promotion. This is a zero-cash plan for reaching operators at small US B2B service firms who personally handle overdue invoice exceptions. Rankings are hypotheses about buyer fit, not measured conversion rates or promises of reach.
 
 ## Readiness gate
 

@@ -412,6 +412,7 @@ function App() {
   const loadBlockedRef = useRef(loadBlocked)
   const rawPreparedExpectedRef = useRef<string | null>(null)
   const rawPreparedKeyRef = useRef<string | null>(null)
+  const rawVerificationAttemptRef = useRef(0)
   const conflictBackupExpectedRef = useRef<string | null>(null)
   const conflictBackupSnapshotRef = useRef<string | null>(null)
   invoicesRef.current = invoices
@@ -545,18 +546,21 @@ function App() {
     saveDownload(raw, `duekrio-locked-raw-${asOf}.json`, 'application/json')
     rawPreparedExpectedRef.current = raw
     rawPreparedKeyRef.current = LOCKED_WORKSPACE_STORAGE_KEY
+    rawVerificationAttemptRef.current += 1
     setRawPrepared(true)
     setRawDownloaded(false)
+    setConflictBackupDownloaded(false)
     setRawVerificationError('')
   }
 
-  async function verifyRawDownload(file?: File): Promise<void> {
-    if (!file || !rawPrepared) return
-    const expected = rawPreparedExpectedRef.current
-    const key = rawPreparedKeyRef.current
+  async function verifyRawDownload(file: File, attempt: number, expected: string | null, key: string | null): Promise<void> {
     if (expected === null || !key) throw new Error('Download the exact raw copy again before verifying it.')
     if (!(await fileMatchesExactText(file, expected))) {
       throw new Error('The selected file does not match the downloaded raw copy byte for byte. Keep the browser data and download it again.')
+    }
+    if (attempt !== rawVerificationAttemptRef.current) return
+    if (rawPreparedExpectedRef.current !== expected || rawPreparedKeyRef.current !== key) {
+      throw new Error('The raw browser copy changed during verification. Download it again.')
     }
     if (!(loadBlockedRef.current && conflictRef.current)) {
       await withWorkspaceLock(key, async () => {
@@ -565,13 +569,27 @@ function App() {
         }
       })
     }
+    // File reads and Web Locks are asynchronous. A newer selection or download
+    // must win even if this older attempt settles after it.
+    if (attempt !== rawVerificationAttemptRef.current) return
+    if (rawPreparedExpectedRef.current !== expected || rawPreparedKeyRef.current !== key) {
+      throw new Error('The raw browser copy changed during verification. Download it again.')
+    }
     setRawVerificationError('')
     setRawDownloaded(true)
     if (loadBlockedRef.current && conflictRef.current) setConflictBackupDownloaded(true)
   }
 
   async function handleRawVerification(file?: File): Promise<void> {
-    try { await verifyRawDownload(file) } catch (error) {
+    if (!file) return
+    const attempt = ++rawVerificationAttemptRef.current
+    const expected = rawPreparedExpectedRef.current
+    const key = rawPreparedKeyRef.current
+    setRawDownloaded(false)
+    setConflictBackupDownloaded(false)
+    setRawVerificationError('')
+    try { await verifyRawDownload(file, attempt, expected, key) } catch (error) {
+      if (attempt !== rawVerificationAttemptRef.current) return
       setRawDownloaded(false)
       setConflictBackupDownloaded(false)
       setRawVerificationError(error instanceof Error ? error.message : 'The raw file could not be verified. Download it again.')
@@ -615,6 +633,10 @@ function App() {
         setImportReview(snapshot.review)
         setLockedReady(true)
         setLockedReadError(false)
+        rawVerificationAttemptRef.current += 1
+        rawPreparedExpectedRef.current = null
+        rawPreparedKeyRef.current = null
+        setRawPrepared(false)
         setRawDownloaded(false)
         setSaveState('saved')
         setStorageWarning('')
@@ -769,9 +791,12 @@ function App() {
             if (currentLocked !== lockedRawRef.current) {
               lockedRawRef.current = currentLocked
               setLockedRaw(currentLocked)
+              rawVerificationAttemptRef.current += 1
               setRawDownloaded(false)
+              setConflictBackupDownloaded(false)
               setRawPrepared(false)
               rawPreparedExpectedRef.current = null
+              rawPreparedKeyRef.current = null
               setRawVerificationError('The encrypted browser copy changed. Download and verify the latest raw file before recovery.')
             }
             setLockedReadError(false)
@@ -904,8 +929,10 @@ function App() {
     saveDownload(saved.corruptRaw, `duekrio-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
     rawPreparedExpectedRef.current = saved.corruptRaw
     rawPreparedKeyRef.current = WORKSPACE_STORAGE_KEY
+    rawVerificationAttemptRef.current += 1
     setRawPrepared(true)
     setRawDownloaded(false)
+    setConflictBackupDownloaded(false)
     setRawVerificationError('')
   }
 
@@ -923,7 +950,9 @@ function App() {
         if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== null) throw new Error('The unreadable browser entry could not be removed.')
         lastSavedRawRef.current = null
         lastSavedSnapshotRef.current = ''
+        rawVerificationAttemptRef.current += 1
         rawPreparedExpectedRef.current = null
+        rawPreparedKeyRef.current = null
         setRawPrepared(false)
         setRawDownloaded(false)
         setInvoices([])

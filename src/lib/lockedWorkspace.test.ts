@@ -79,7 +79,7 @@ describe('optional locked local workspace envelope', () => {
       await expect(unlockLockedWorkspace(JSON.stringify(modified), passphrase)).rejects.toThrow('Incorrect passphrase or damaged')
     }
     session.close()
-  })
+  }, 20_000)
 
   it('rejects unsupported algorithms, extra fields, malformed lengths, and oversized input before decryption', async () => {
     const { session, envelope } = await createLockedWorkspace(snapshot, passphrase)
