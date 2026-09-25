@@ -27,6 +27,8 @@ Count a problem as validated only when the buyer describes a recent incident, a 
 
 ## First ten customers
 
+The [ranked distribution experiments](marketing/CHANNEL_RANKING.md) specify where to test for qualified buyers after the site and trust gates pass. They remain on hold with all other marketing activity.
+
 | Stage | Action | Evidence required to advance |
 | --- | --- | --- |
 | 1. Prepare | Publish a clear demo, a sample aging CSV, import instructions, privacy/storage explanation, and a one-page AR blocker checklist. Test imports using synthetic and redacted records. | A new user can import, classify, and export without assistance; no silent data loss. |

@@ -120,3 +120,5 @@
 .preview-data-caution svg{flex:none;margin-top:1px}
 .conflict-panel{border-color:#eacda6;background:#fffdf9}
 .conflict-panel .recovery-icon{background:#fff2df;color:#9c6425}
+.backup-dialog .drawer-kicker{color:#23624e}
+.backup-dialog .import-filename,.backup-dialog .field-hint,.backup-dialog .form-grid label{color:#36584a}

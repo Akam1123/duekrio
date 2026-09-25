@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { exportLedgerJson, invoiceKey } from './ledger'
 import {
   WORKSPACE_STORAGE_KEY,
+  decryptWorkspaceJson,
+  encryptWorkspaceJson,
   exportWorkspaceJson,
   importWorkspaceJson,
+  isEncryptedWorkspaceJson,
   saveWorkspaceIfCurrent,
+  validateEncryptedWorkspaceJson,
 } from './workspace'
 import type { Invoice } from './types'
 
@@ -44,6 +48,33 @@ describe('workspace persistence', () => {
     backup.review = { missingKeys: [], paidSeenKeys: [] }
     backup.demo = 'false'
     expect(() => importWorkspaceJson(JSON.stringify(backup))).toThrow('Invalid backup sample status')
+  })
+
+  it('encrypts a complete backup with fresh randomness and restores it only with the passphrase', async () => {
+    const snapshot = { invoices: [row], demo: true, review: { missingKeys: [row.key], paidSeenKeys: [] } }
+    const passphrase = 'a long unique backup phrase for this test'
+    const first = await encryptWorkspaceJson(snapshot, passphrase)
+    const second = await encryptWorkspaceJson(snapshot, passphrase)
+    expect(isEncryptedWorkspaceJson(first)).toBe(true)
+    expect(first).not.toContain('Northstar')
+    expect(JSON.parse(first).salt).not.toBe(JSON.parse(second).salt)
+    expect(JSON.parse(first).iv).not.toBe(JSON.parse(second).iv)
+    expect(await decryptWorkspaceJson(first, passphrase)).toEqual(snapshot)
+    await expect(decryptWorkspaceJson(first, 'the wrong passphrase')).rejects.toThrow('Incorrect passphrase or damaged')
+  })
+
+  it('rejects tampered ciphertext and unsupported encrypted envelope metadata', async () => {
+    const snapshot = { invoices: [row], demo: false, review: { missingKeys: [], paidSeenKeys: [] } }
+    const encrypted = JSON.parse(await encryptWorkspaceJson(snapshot, 'another long unique test passphrase'))
+    const original = encrypted.ciphertext as string
+    encrypted.ciphertext = `${original[0] === 'A' ? 'B' : 'A'}${original.slice(1)}`
+    await expect(decryptWorkspaceJson(JSON.stringify(encrypted), 'another long unique test passphrase')).rejects.toThrow('Incorrect passphrase or damaged')
+    encrypted.ciphertext = original
+    encrypted.iterations = 1
+    expect(() => validateEncryptedWorkspaceJson(JSON.stringify(encrypted))).toThrow('Unsupported encrypted backup format')
+    encrypted.iterations = 600_000
+    encrypted.extra = 'ignored?'
+    expect(() => validateEncryptedWorkspaceJson(JSON.stringify(encrypted))).toThrow('Unsupported encrypted backup format')
   })
 
   it('refuses a stale tab write and keeps the newer browser snapshot', () => {

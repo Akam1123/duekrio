@@ -1,12 +1,12 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { remainingLegacyProjectUrls, rewriteLegacyHtmlUrls } from './hosted-urls.mjs'
 
 // The GitHub Pages demo uses a project path. A dedicated static host serves
 // the same app from /, with its own origin and browser-storage boundary.
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distRoot = path.join(projectRoot, 'dist-hosted')
-const oldOrigin = 'https://akam1123.github.io/promiseledger/'
 const suppliedOrigin = process.env.PUBLIC_ORIGIN
 if (!suppliedOrigin) throw new Error('Set PUBLIC_ORIGIN to the exact HTTPS root URL claimed for this deployment (for example https://your-project.pages.dev/).')
 const url = new URL(suppliedOrigin)
@@ -47,8 +47,8 @@ for (const file of files) {
     html = assertOne(html, /<p>The website is currently served by GitHub Pages\.[\s\S]*?<\/p>/g, 'host disclosure', privacyNew)
     html = assertOne(html, /\s*<div class="note" id="legacy-host-warning">[\s\S]*?<\/div>/g, 'legacy-host warning', '')
   }
-  html = html.replaceAll(oldOrigin, publicOrigin).replace(/(["'])\/promiseledger\//g, '$1/')
-  if (html.includes(oldOrigin) || /(["'])\/promiseledger\//.test(html)) throw new Error(`Old deployment path remains in ${file}`)
+  html = rewriteLegacyHtmlUrls(html, publicOrigin).replace(/(["'])\/promiseledger\//g, '$1/')
+  if (remainingLegacyProjectUrls(html).length > 0 || /(["'])\/promiseledger\//.test(html)) throw new Error(`Old deployment path remains in ${file}`)
   if (/<script\b(?![^>]*\bsrc=)[^>]*>/i.test(html) || /<style\b/i.test(html) || /\son[a-z]+\s*=/i.test(html)) {
     throw new Error(`Inline executable content remains in ${file}; the strict CSP would block it.`)
   }

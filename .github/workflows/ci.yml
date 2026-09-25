@@ -5,12 +5,15 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
           cache: npm
@@ -21,5 +24,6 @@ jobs:
       - run: git diff --exit-code -- Duenara-offline.html PromiseLedger-offline.html
       - run: npm run build:hosted
         env:
-          # Build-only origin. Production must use the exact claimed Pages URL.
-          PUBLIC_ORIGIN: https://akam1123.github.io/
+          # Build-only placeholder, not a claimed deployment URL.
+          # Production must use the exact hostname assigned by Pages.
+          PUBLIC_ORIGIN: https://qa-duenara.pages.dev/

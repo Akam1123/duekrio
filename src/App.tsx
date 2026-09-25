@@ -34,13 +34,18 @@ import {
 } from './lib/ledger'
 import {
   WORKSPACE_STORAGE_KEY,
+  MIN_BACKUP_PASSPHRASE_LENGTH,
+  decryptWorkspaceJson,
   emptyReview,
+  encryptWorkspaceJson,
   exportWorkspaceJson,
   importWorkspaceJson,
+  isEncryptedWorkspaceJson,
   saveWorkspaceIfCurrent,
   serializeWorkspace,
+  validateEncryptedWorkspaceJson,
 } from './lib/workspace'
-import type { ImportReview } from './lib/workspace'
+import type { ImportReview, WorkspaceSnapshot } from './lib/workspace'
 import type { CsvImportResult, Invoice, InvoiceAnnotation } from './lib/types'
 
 type View = 'home' | 'app'
@@ -51,6 +56,7 @@ const MAX_CSV_BYTES = 2 * 1024 * 1024
 // Leave room for notes and non-ASCII text in a valid browser-storage backup,
 // while rejecting unexpectedly large files before reading or parsing them.
 const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024
+const MAX_ENCRYPTED_BACKUP_FILE_BYTES = 16 * 1024 * 1024
 const sampleCsvUrl = (window as Window & { __DUENARA_SAMPLE_CSV_URL__?: string }).__DUENARA_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
 const contentBaseUrl = window.location.protocol === 'file:' ? 'https://akam1123.github.io/promiseledger/' : import.meta.env.BASE_URL
@@ -307,6 +313,8 @@ function App() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
+  const [backupRequest, setBackupRequest] = useState<'normal' | 'conflict' | null>(null)
+  const [pendingEncryptedRestore, setPendingEncryptedRestore] = useState<{ fileName: string; json: string } | null>(null)
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const csvInput = useRef<HTMLInputElement>(null)
@@ -488,24 +496,35 @@ function App() {
     }
   }
 
+  function applyRestoredSnapshot(restored: WorkspaceSnapshot): void {
+    if (conflictRef.current) throw new Error('Another tab changed this workspace. Back up this tab, then load the latest saved version before restoring.')
+    if ((loadBlocked || (invoices.length && !demo)) && !window.confirm(loadBlocked
+      ? `Replace the unreadable browser data with ${restored.invoices.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
+      : `Replace your current ${invoices.length} invoices with ${restored.invoices.length} from this backup? Export your current backup first if you may need it.`)) return
+    if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) { markStorageConflict(); throw new Error('Another tab changed this workspace. No data was changed.') }
+    lastSubmittedRef.current = ''
+    setInvoices(restored.invoices)
+    setDemo(restored.demo)
+    setImportReview(restored.review)
+    setLoadBlocked(false)
+    setStorageWarning('')
+    setToast({ text: `Restored ${restored.invoices.length} invoices from backup.`, kind: 'good' })
+  }
+
   async function restoreBackup(file?: File) {
     if (!file) return
     try {
-      if (storageConflict) throw new Error('Another tab changed this workspace. Back up this tab, then load the latest saved version before restoring.')
+      if (conflictRef.current) throw new Error('Another tab changed this workspace. Back up this tab, then load the latest saved version before restoring.')
       if (loadBlocked && !rawDownloaded) throw new Error('Download the unreadable raw data before restoring a backup.')
-      if (file.size > MAX_JSON_BACKUP_BYTES) throw new Error('This JSON backup is over 10 MB. No data was changed. Restore a smaller backup.')
-      const restored = importWorkspaceJson(await file.text())
-      if ((loadBlocked || (invoices.length && !demo)) && !window.confirm(loadBlocked
-        ? `Replace the unreadable browser data with ${restored.invoices.length} invoices from this backup? Keep the raw copy you downloaded in case it can be recovered later.`
-        : `Replace your current ${invoices.length} invoices with ${restored.invoices.length} from this backup? Export your current backup first if you may need it.`)) return
-      if (window.localStorage.getItem(WORKSPACE_STORAGE_KEY) !== lastSavedRawRef.current) { markStorageConflict(); return }
-      lastSubmittedRef.current = ''
-      setInvoices(restored.invoices)
-      setDemo(restored.demo)
-      setImportReview(restored.review)
-      setLoadBlocked(false)
-      setStorageWarning('')
-      setToast({ text: `Restored ${restored.invoices.length} invoices from backup.`, kind: 'good' })
+      if (file.size > MAX_ENCRYPTED_BACKUP_FILE_BYTES) throw new Error('This backup is over 16 MB. No data was changed. Restore a smaller backup.')
+      const json = await file.text()
+      if (isEncryptedWorkspaceJson(json)) {
+        validateEncryptedWorkspaceJson(json)
+        setPendingEncryptedRestore({ fileName: file.name, json })
+      } else {
+        if (file.size > MAX_JSON_BACKUP_BYTES) throw new Error('This plain JSON backup is over 10 MB. No data was changed. Restore a smaller backup.')
+        applyRestoredSnapshot(importWorkspaceJson(json))
+      }
     } catch (error) {
       setToast({ text: error instanceof Error ? error.message : 'That backup could not be read.', kind: 'warn' })
     } finally {
@@ -547,13 +566,30 @@ function App() {
     return true
   }
 
-  const downloadBackup = () => saveDownload(exportWorkspaceJson({ invoices, demo, review: importReview }), `duenara-backup-${asOf}.json`, 'application/json')
+  const downloadBackup = () => setBackupRequest('normal')
+  const backupSnapshot = (): WorkspaceSnapshot => ({ invoices, demo, review: importReview })
+  function finishBackupRequest() {
+    if (backupRequest === 'conflict') setConflictBackupDownloaded(true)
+    setBackupRequest(null)
+  }
+  function downloadPlainBackup() {
+    saveDownload(exportWorkspaceJson(backupSnapshot()), `duenara-backup-${asOf}.json`, 'application/json')
+    finishBackupRequest()
+    setToast({ text: 'Plain JSON backup downloaded. Protect this readable file.', kind: 'warn' })
+  }
+  async function downloadEncryptedBackup(passphrase: string) {
+    const encrypted = await encryptWorkspaceJson(backupSnapshot(), passphrase)
+    saveDownload(encrypted, `duenara-backup-${asOf}.encrypted.json`, 'application/json')
+    finishBackupRequest()
+    setToast({ text: 'Encrypted JSON backup downloaded. Keep the passphrase separately; it cannot be recovered.', kind: 'good' })
+  }
   const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `duenara-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
 
   function downloadConflictBackup() {
-    if (saved.corruptRaw !== undefined && loadBlocked) downloadCorruptCopy()
-    else downloadBackup()
-    setConflictBackupDownloaded(true)
+    if (saved.corruptRaw !== undefined && loadBlocked) {
+      downloadCorruptCopy()
+      setConflictBackupDownloaded(true)
+    } else setBackupRequest('conflict')
   }
 
   if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked && !storageConflict} startSample={() => { if (loadBlocked || storageConflict || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
@@ -571,17 +607,17 @@ function App() {
           <button className="mobile-menu app-menu-toggle" aria-label="More actions" aria-expanded={showMobileMenu} onClick={() => setShowMobileMenu(!showMobileMenu)}><MoreHorizontal size={23} /></button>
         </div>
       </div>
-      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup JSON</button><button disabled={loadBlocked || storageConflict} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
+      {showMobileMenu && <div className="app-mobile-actions"><button onClick={() => { setShowGuide(true); setShowMobileMenu(false) }}>Help</button><button disabled={!invoices.length} onClick={() => { downloadBackup(); setShowMobileMenu(false) }}>Backup options</button><button disabled={loadBlocked || storageConflict} onClick={() => { csvInput.current?.click(); setShowMobileMenu(false) }}>Import CSV</button></div>}
     </header>
     <main className="app-main wrap">
       <input ref={csvInput} type="file" accept=".csv,text/csv" className="sr-only" onChange={event => void importCsv(event.target.files?.[0])} aria-label="Import invoice CSV" />
-      <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup" />
+      <input ref={restoreInput} type="file" accept=".json,application/json" className="sr-only" onChange={event => void restoreBackup(event.target.files?.[0])} aria-label="Restore JSON backup, encrypted or plain" />
       <div className="app-title-row">
         <div><span className="kicker">YOUR RECEIVABLES, WITH A PLAN</span><h1>Action board<span className="title-period">.</span></h1><p>Know what is stuck, who is moving it, and when to follow up.</p></div>
         <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked || storageConflict}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
       </div>
 
-      {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup JSON <ArrowDownToLine size={15} /></button></div>}
+      {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved without encryption in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup options <ArrowDownToLine size={15} /></button></div>}
 
       {storageWarning && !loadBlocked && !storageConflict && <div className="notice warning"><CircleAlert size={19} /><span>{storageWarning}</span></div>}
       {demo && !storageConflict && <div className="notice demo"><FileSpreadsheet size={18} /><span>You are viewing sample invoices. Import your own CSV to replace this demo.</span><button onClick={() => csvInput.current?.click()}>Import yours <ArrowRight size={15} /></button></div>}
@@ -591,7 +627,7 @@ function App() {
         <div className="recovery-icon"><CircleAlert size={30} /></div>
         <span className="kicker">WORKSPACE CHANGED IN ANOTHER TAB</span>
         <h2 id="conflict-title">This tab stopped saving.</h2>
-        <p>{loadBlocked ? 'Another tab changed the browser workspace while this tab was recovering unreadable data. Download the original raw copy from this tab before loading the latest saved version.' : 'Another tab changed the browser workspace. The copy in this tab remains here, including edits you made before this warning. Download its JSON backup before loading the latest saved version. You can then review or restore the backup as needed.'}</p>
+        <p>{loadBlocked ? 'Another tab changed the browser workspace while this tab was recovering unreadable data. Download the original raw copy from this tab before loading the latest saved version.' : 'Another tab changed the browser workspace. The copy in this tab remains here, including edits you made before this warning. Download a backup before loading the latest saved version. You can then review or restore it as needed.'}</p>
         <div className="recovery-actions"><button className="button button-primary" onClick={downloadConflictBackup}><ArrowDownToLine size={17} /> {conflictBackupDownloaded ? 'Download this tab again' : loadBlocked ? '1. Download original raw copy' : '1. Back up this tab'}</button><button className="button button-secondary" disabled={!conflictBackupDownloaded} onClick={() => window.location.reload()}><ArrowRight size={17} /> 2. Load latest saved version</button></div>
         {!conflictBackupDownloaded && <small>Loading the saved version unlocks after you download this tab's copy.</small>}
       </section> : loadBlocked ? <section className="recovery-panel" aria-labelledby="recovery-title">
@@ -607,7 +643,7 @@ function App() {
         <h2>Your next move starts here.</h2>
         <p>Import a CSV with customer, invoice number, due date and amount. Or use sample invoices to see how the board works.</p>
         <div className="empty-actions"><button className="button button-primary" onClick={() => csvInput.current?.click()}><FileUp size={18} /> Import CSV</button><button className="button button-secondary" onClick={() => { if (loadBlocked) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()) }}>Explore sample data</button></div>
-        <div className="empty-foot"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Download sample CSV <ArrowDownToLine size={15} /></a><span /> <button onClick={() => restoreInput.current?.click()}>Restore a JSON backup <ArrowRight size={15} /></button></div>
+        <div className="empty-foot"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Download sample CSV <ArrowDownToLine size={15} /></a><span /> <button onClick={() => restoreInput.current?.click()}>Restore a backup <ArrowRight size={15} /></button></div>
       </div> : <>
         <section className="metric-grid" aria-label="Receivables overview">
           <div className="metric-card metric-dark"><span>Open balance <span className="metric-icon"><FileSpreadsheet size={17} /></span></span><strong>{dollars(openBalance)}</strong><small>Across {active.length} open invoices</small></div>
@@ -638,6 +674,12 @@ function App() {
     {selected && <InvoiceDrawer key={selected.key} invoice={selected} asOf={asOf} storageConflict={storageConflict} onClose={() => setSelectedKey(null)} onSave={updateInvoice} onDelete={deleteInvoice} onToast={setToast} />}
     {showAdd && <AddInvoiceModal onClose={() => setShowAdd(false)} onAdd={addInvoice} replacingDemo={demo} storageConflict={storageConflict} />}
     {showGuide && <GuideModal onClose={() => setShowGuide(false)} onRestore={() => { setShowGuide(false); restoreInput.current?.click() }} />}
+    {backupRequest && <BackupModal onClose={() => setBackupRequest(null)} onPlain={downloadPlainBackup} onEncrypted={downloadEncryptedBackup} />}
+    {pendingEncryptedRestore && <EncryptedRestoreModal fileName={pendingEncryptedRestore.fileName} onClose={() => setPendingEncryptedRestore(null)} onRestore={async passphrase => {
+      const restored = await decryptWorkspaceJson(pendingEncryptedRestore.json, passphrase)
+      applyRestoredSnapshot(restored)
+      setPendingEncryptedRestore(null)
+    }} />}
     {pendingImport && <ImportPreviewModal pending={pendingImport} storageConflict={storageConflict} onCancel={() => setPendingImport(null)} onConfirm={confirmImport} />}
     {toast && <div className={`toast ${toast.kind || 'good'}`} role="status"><span>{toast.kind === 'warn' ? <CircleAlert size={18} /> : <CheckCircle2 size={18} />}</span>{toast.text}<button onClick={() => setToast(null)} aria-label="Dismiss message"><X size={15} /></button></div>}
   </div>
@@ -689,7 +731,7 @@ function ImportPreviewModal({ pending, storageConflict, onCancel, onConfirm }: {
     <div ref={dialogRef} className="dialog import-preview" role="dialog" aria-modal="true" aria-labelledby="import-preview-title" aria-describedby="import-preview-description">
       <div className="dialog-head"><div><span className="drawer-kicker">IMPORT PREVIEW</span><h2 id="import-preview-title">Check this CSV first</h2><p id="import-preview-description" className="import-filename">{pending.fileName}</p></div><button type="button" className="icon-button" onClick={onCancel} aria-label="Cancel import"><X size={20} /></button></div>
       <p className="import-intro">Nothing has changed yet. {hasValidRows ? pending.replacingDemo ? 'This import will replace the sample workspace and any sample edits.' : 'Matched invoices will receive the CSV balance, dates and email. Your notes stay attached, and invoices absent from this CSV are kept.' : 'No valid invoices were found. Check the issues below and choose another CSV.'}</p>
-      {sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser data and downloaded backups are not encrypted by Duenara.</p>}
+      {sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser storage and CSV exports are not encrypted; JSON backups can be encrypted with a passphrase.</p>}
       {storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Cancel this import, back up this tab, and load the latest saved version.</p>}
       <div className="import-stats" aria-label="Import counts"><div><strong>{result.added}</strong><span>new</span></div><div><strong>{result.updated}</strong><span>updated</span></div><div className={result.skipped ? 'import-stat-alert' : ''}><strong>{result.skipped}</strong><span>skipped</span></div><div><strong>{retained}</strong><span>kept</span></div></div>
       {result.issues.length > 0 && <section className="import-issues" aria-labelledby="import-issues-title"><h3 id="import-issues-title"><CircleAlert size={17} /> {result.issues.length} CSV {result.issues.length === 1 ? 'issue' : 'issues'}</h3><p>Rows with missing or invalid required values and duplicate invoices will be skipped. Other warnings may mean optional information was not imported. Check every item before continuing.</p><ul>{result.issues.map((issue, index) => <li key={`${issue.row}-${index}`}><strong>Line {issue.row}</strong><span>{issue.message}</span></li>)}</ul><label className="import-ack"><input type="checkbox" checked={reviewedIssues} onChange={event => setReviewedIssues(event.target.checked)} /> I reviewed the CSV issues and accept importing the valid rows only.</label></section>}
@@ -705,12 +747,66 @@ function AddInvoiceModal({ onClose, onAdd, replacingDemo, storageConflict }: { o
   const requestClose = () => { if (Object.values(form).some(Boolean) && !window.confirm('Discard your unsaved invoice?')) return; onClose() }
   const dialogRef = useDialogFocus<HTMLFormElement>(requestClose)
   const set = (key: keyof typeof form, value: string) => { setForm(current => ({ ...current, [key]: value })); setError('') }
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div>{sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser data and downloaded backups are not encrypted by Duenara.</p>}{storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Keep this form in this tab, then download the tab backup. It will not save to browser storage.</p>}<div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> {storageConflict ? 'Keep for backup' : 'Add invoice'}</button></div></form></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div>{sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser storage and CSV exports are not encrypted; JSON backups can be encrypted with a passphrase.</p>}{storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Keep this form in this tab, then download the tab backup. It will not save to browser storage.</p>}<div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> {storageConflict ? 'Keep for backup' : 'Add invoice'}</button></div></form></div>
 }
 
 function GuideModal({ onClose, onRestore }: { onClose: () => void; onRestore: () => void }) {
   const dialogRef = useDialogFocus<HTMLDivElement>(onClose)
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Duenara</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>This workspace lives in your browser's local storage. It has no login or team sync. Use Backup JSON often and store the file according to your firm's security policy. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Duenara</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>This workspace lives without encryption in your browser's local storage. It has no login or team sync. Choose a passphrase-encrypted JSON backup for exported files; keep the passphrase separately because Duenara cannot recover it. Plain JSON and CSV exports remain readable. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
+}
+
+function BackupModal({ onClose, onPlain, onEncrypted }: { onClose: () => void; onPlain: () => void; onEncrypted: (passphrase: string) => Promise<void> }) {
+  const [passphrase, setPassphrase] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const dialogRef = useDialogFocus<HTMLDivElement>(() => { if (!busy) onClose() })
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    if (Array.from(passphrase).length < MIN_BACKUP_PASSPHRASE_LENGTH) { setError(`Use at least ${MIN_BACKUP_PASSPHRASE_LENGTH} characters in a unique passphrase.`); return }
+    if (passphrase !== confirmation) { setError('The passphrases do not match.'); return }
+    setBusy(true)
+    setError('')
+    try { await onEncrypted(passphrase) } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Encrypted backup could not be created.')
+      setBusy(false)
+    }
+  }
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}>
+    <div ref={dialogRef} className="dialog backup-dialog" role="dialog" aria-modal="true" aria-labelledby="backup-title"><form onSubmit={event => void submit(event)}>
+      <div className="dialog-head"><div><span className="drawer-kicker">BACK UP YOUR WORK</span><h2 id="backup-title">Choose a JSON backup</h2><p>Encrypted is safer for a file you will store or move.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close backup options"><X size={20} /></button></div>
+      <p className="field-hint">Only the downloaded encrypted file is protected. This browser workspace and CSV exports remain readable to anyone with access to your browser profile or exported files.</p>
+      <div className="form-grid"><label>Backup passphrase<input type="password" autoComplete="off" spellCheck={false} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} minLength={MIN_BACKUP_PASSPHRASE_LENGTH} placeholder="At least 16 characters" /></label><label>Repeat passphrase<input type="password" autoComplete="off" spellCheck={false} value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} placeholder="Enter the same passphrase" /></label></div>
+      <p className="field-hint">Use a long, unique passphrase and keep it separately. Duenara cannot recover the file if you lose it. The passphrase is not sent or saved by Duenara.</p>
+      {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
+      <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy} onClick={onPlain}>Download readable JSON</button><button type="submit" className="button button-primary" disabled={busy}><LockKeyhole size={17} /> {busy ? 'Encrypting…' : 'Download encrypted JSON'}</button></div>
+    </form></div>
+  </div>
+}
+
+function EncryptedRestoreModal({ fileName, onClose, onRestore }: { fileName: string; onClose: () => void; onRestore: (passphrase: string) => Promise<void> }) {
+  const [passphrase, setPassphrase] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const dialogRef = useDialogFocus<HTMLDivElement>(() => { if (!busy) onClose() })
+  async function submit(event: React.FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    try { await onRestore(passphrase) } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Encrypted backup could not be restored.')
+      setBusy(false)
+    }
+  }
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}>
+    <div ref={dialogRef} className="dialog backup-dialog" role="dialog" aria-modal="true" aria-labelledby="encrypted-restore-title"><form onSubmit={event => void submit(event)}>
+      <div className="dialog-head"><div><span className="drawer-kicker">ENCRYPTED BACKUP</span><h2 id="encrypted-restore-title">Unlock your backup</h2><p className="import-filename">{fileName}</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close encrypted restore"><X size={20} /></button></div>
+      <p className="field-hint">Enter the passphrase used when this file was created. Nothing in your workspace changes unless decryption and backup validation succeed and you confirm replacement.</p>
+      <div className="form-grid"><label>Backup passphrase<input type="password" autoComplete="off" spellCheck={false} required value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label></div>
+      {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
+      <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy} onClick={onClose}>Cancel</button><button type="submit" className="button button-primary" disabled={busy}><FileUp size={17} /> {busy ? 'Unlocking…' : 'Unlock and review restore'}</button></div>
+    </form></div>
+  </div>
 }
 
 export default App
