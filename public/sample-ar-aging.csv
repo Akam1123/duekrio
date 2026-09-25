@@ -1,0 +1,6 @@
+Customer,Invoice Number,Invoice Date,Due Date,Amount,Email
+Northstar Studio,INV-1042,2026-08-07,2026-09-06,4800,ap@northstar.example
+Fieldstone Partners,INV-1068,2026-08-15,2026-09-14,7200,finance@fieldstone.example
+Harbor Works,INV-1071,2026-08-19,2026-09-18,2350,accounts@harbor.example
+Summit Creative,INV-1084,2026-08-25,2026-09-24,6450,ap@summit.example
+Lumen Labs,INV-1089,2026-09-03,2026-10-03,3900,billing@lumen.example
