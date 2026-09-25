@@ -1,6 +1,6 @@
 # Duenara: first-customer plan
 
-Plan drafted 25 September 2026. Duenara is a provisional name pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
+Plan drafted 25 September 2026. Duenara is live as a free prototype at [duenara.pages.dev](https://duenara.pages.dev/), with a provisional name pending trademark checks. **Marketing and outreach are on hold until the user's later explicit start instruction.** This document describes future validation and distribution; no prospects have been contacted and no customers or revenue are claimed.
 
 ## Positioning
 
@@ -41,7 +41,7 @@ One practical channel hypothesis is bookkeeping firms: they already see AR aging
 
 ## Offer and pricing experiments
 
-Start with a free demo using synthetic data. Test $29/month for one operator, with an optional $149 guided CSV/setup session. A $59/month team tier is a later test only if safe collaboration is built; the MVP has no team access. State clearly which capabilities exist at the time of sale; do not charge for future integrations or sync. Subscription value and entitlement for a local-only app also need to be tested. A paid pilot could be priced as a fixed two-week service if subscription billing is not yet implemented, but the buyer must receive a defined deliverable. Track whether buyers accept the price **after** using real workflow data, rather than asking for a hypothetical number on a call.
+Start with the free demo using synthetic data. A **$29/month single-operator Pro** plan is a test only after a distinct premium benefit works and a real provider approves the product; the [billing plan](BILLING.md) describes the prerequisites. A **$59/month team tier** is a later hypothesis only if safe collaboration is built; the present owner field is a local label, not team access. Do not charge for future integrations, sync, or the existing MIT-licensed client bundle behind a bypassable paywall. A guided setup or fixed-price pilot would require a defined deliverable, a real person to perform it, and payment-provider approval; it is not part of the current offer. Track whether buyers accept a stated price **after** using real workflow data, rather than asking for a hypothetical number on a call.
 
 ## Success, revision, and stop rules
 

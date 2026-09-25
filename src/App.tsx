@@ -59,8 +59,10 @@ const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024
 const MAX_ENCRYPTED_BACKUP_FILE_BYTES = 16 * 1024 * 1024
 const sampleCsvUrl = (window as Window & { __DUENARA_SAMPLE_CSV_URL__?: string }).__DUENARA_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
-const contentBaseUrl = window.location.protocol === 'file:' ? 'https://akam1123.github.io/promiseledger/' : import.meta.env.BASE_URL
+const contentBaseUrl = window.location.protocol === 'file:' ? 'https://duenara.pages.dev/' : import.meta.env.BASE_URL
 const sharedPreviewHost = window.location.hostname === 'akam1123.github.io'
+const dedicatedSiteUrl = 'https://duenara.pages.dev/'
+const dedicatedWorkspaceUrl = `${dedicatedSiteUrl}#/app`
 const today = () => {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -208,6 +210,11 @@ function Brand({ onClick }: { onClick: () => void }) {
   </button>
 }
 
+function LegacyDataCaution() {
+  if (!sharedPreviewHost) return null
+  return <p className="preview-data-caution"><CircleAlert size={16} /><span>This old address shares browser storage with other projects on its origin. The live workspace here is not encrypted. Use <a href={dedicatedSiteUrl} target="_blank" rel="noopener noreferrer">duenara.pages.dev</a> for new work. To move saved work, download a JSON backup here and restore it there. CSV and plain JSON exports remain readable; a passphrase-encrypted JSON backup is available.</span></p>
+}
+
 function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => void; startSample: () => void; sampleAvailable: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return <div className="site-shell">
@@ -222,6 +229,8 @@ function Landing({ openApp, startSample, sampleAvailable }: { openApp: () => voi
       </nav>
       <button className="mobile-menu" aria-label="Toggle menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22} /> : <Menu size={22} />}</button>
     </header>
+
+    {sharedPreviewHost && <aside className="legacy-migration wrap" aria-label="Duenara's new address"><div><strong>Duenara has moved to its own address.</strong><p>Work saved on this old address will not appear there automatically. If you have work here, open this workspace, choose Backup options and download a JSON file. Then open the new workspace and choose Restore backup. Check your work there before clearing data here.</p></div><div className="legacy-migration-actions"><button type="button" onClick={openApp}>Open old workspace</button><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duenara.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
 
     <main>
       <section className="hero wrap">
@@ -594,6 +603,14 @@ function App() {
 
   if (view === 'home') return <Landing openApp={() => navigate('app')} sampleAvailable={!invoices.length && !loadBlocked && !storageConflict} startSample={() => { if (loadBlocked || storageConflict || invoices.length) return; setInvoices(makeDemo()); setDemo(true); setImportReview(emptyReview()); navigate('app') }} />
 
+  const migrationCopy = loadBlocked
+    ? 'Saved data here could not be read. Follow the recovery steps below and keep the raw copy. Move only a valid JSON backup to the new address.'
+    : storageConflict
+      ? 'Another tab changed this workspace. Follow the recovery steps below and download this tab’s copy before moving to the new address.'
+      : invoices.length
+        ? 'This browser keeps data for the two addresses separately. Download a JSON backup here, then open the new workspace and choose Restore backup. Check the restored invoices before clearing data here. An encrypted backup protects the downloaded file; live browser storage remains unencrypted.'
+        : 'No invoices are loaded here. Open the new address to start, or restore an existing JSON backup there. Data from this address does not transfer automatically.'
+
   return <div className="app-shell">
     <header className="app-header">
       <div className="app-header-inner wrap">
@@ -616,6 +633,8 @@ function App() {
         <div><span className="kicker">YOUR RECEIVABLES, WITH A PLAN</span><h1>Action board<span className="title-period">.</span></h1><p>Know what is stuck, who is moving it, and when to follow up.</p></div>
         <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked || storageConflict}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
       </div>
+
+      {sharedPreviewHost && <aside className="legacy-migration" aria-label="Duenara's new address"><div><strong>Duenara has moved to its own address.</strong><p>{migrationCopy}</p></div><div className="legacy-migration-actions">{!loadBlocked && !storageConflict && invoices.length > 0 && <button type="button" onClick={downloadBackup}>Backup options</button>}<a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duenara.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
 
       {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span>Saved without encryption in this browser only. There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span><button onClick={downloadBackup} disabled={!invoices.length}>Backup options <ArrowDownToLine size={15} /></button></div>}
 
@@ -731,7 +750,7 @@ function ImportPreviewModal({ pending, storageConflict, onCancel, onConfirm }: {
     <div ref={dialogRef} className="dialog import-preview" role="dialog" aria-modal="true" aria-labelledby="import-preview-title" aria-describedby="import-preview-description">
       <div className="dialog-head"><div><span className="drawer-kicker">IMPORT PREVIEW</span><h2 id="import-preview-title">Check this CSV first</h2><p id="import-preview-description" className="import-filename">{pending.fileName}</p></div><button type="button" className="icon-button" onClick={onCancel} aria-label="Cancel import"><X size={20} /></button></div>
       <p className="import-intro">Nothing has changed yet. {hasValidRows ? pending.replacingDemo ? 'This import will replace the sample workspace and any sample edits.' : 'Matched invoices will receive the CSV balance, dates and email. Your notes stay attached, and invoices absent from this CSV are kept.' : 'No valid invoices were found. Check the issues below and choose another CSV.'}</p>
-      {sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser storage and CSV exports are not encrypted; JSON backups can be encrypted with a passphrase.</p>}
+      <LegacyDataCaution />
       {storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Cancel this import, back up this tab, and load the latest saved version.</p>}
       <div className="import-stats" aria-label="Import counts"><div><strong>{result.added}</strong><span>new</span></div><div><strong>{result.updated}</strong><span>updated</span></div><div className={result.skipped ? 'import-stat-alert' : ''}><strong>{result.skipped}</strong><span>skipped</span></div><div><strong>{retained}</strong><span>kept</span></div></div>
       {result.issues.length > 0 && <section className="import-issues" aria-labelledby="import-issues-title"><h3 id="import-issues-title"><CircleAlert size={17} /> {result.issues.length} CSV {result.issues.length === 1 ? 'issue' : 'issues'}</h3><p>Rows with missing or invalid required values and duplicate invoices will be skipped. Other warnings may mean optional information was not imported. Check every item before continuing.</p><ul>{result.issues.map((issue, index) => <li key={`${issue.row}-${index}`}><strong>Line {issue.row}</strong><span>{issue.message}</span></li>)}</ul><label className="import-ack"><input type="checkbox" checked={reviewedIssues} onChange={event => setReviewedIssues(event.target.checked)} /> I reviewed the CSV issues and accept importing the valid rows only.</label></section>}
@@ -747,7 +766,7 @@ function AddInvoiceModal({ onClose, onAdd, replacingDemo, storageConflict }: { o
   const requestClose = () => { if (Object.values(form).some(Boolean) && !window.confirm('Discard your unsaved invoice?')) return; onClose() }
   const dialogRef = useDialogFocus<HTMLFormElement>(requestClose)
   const set = (key: keyof typeof form, value: string) => { setForm(current => ({ ...current, [key]: value })); setError('') }
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div>{sharedPreviewHost && <p className="preview-data-caution"><CircleAlert size={16} /> Preview link: until Duenara has a dedicated host, use only fictional or non-confidential records you are authorized to handle. Browser storage and CSV exports are not encrypted; JSON backups can be encrypted with a passphrase.</p>}{storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Keep this form in this tab, then download the tab backup. It will not save to browser storage.</p>}<div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> {storageConflict ? 'Keep for backup' : 'Add invoice'}</button></div></form></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) requestClose() }}><form ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" onSubmit={event => { event.preventDefault(); const issue = onAdd(form); if (issue) setError(issue); else onClose() }}><div className="dialog-head"><div><span className="drawer-kicker">MANUAL ENTRY</span><h2 id="add-title">Add an invoice</h2><p>{replacingDemo ? 'Adding your own invoice will replace the sample workspace.' : 'Track an open invoice without importing a CSV.'}</p></div><button type="button" className="icon-button" onClick={requestClose} aria-label="Close"><X size={20} /></button></div><LegacyDataCaution />{storageConflict && <p className="preview-data-caution" role="alert"><CircleAlert size={16} /> Another tab changed the workspace. Keep this form in this tab, then download the tab backup. It will not save to browser storage.</p>}<div className="form-grid"><label>Customer name <span className="required">*</span><input required value={form.customer} onChange={event => set('customer', event.target.value)} placeholder="Northstar Studio" /></label><div className="form-grid two"><label>Invoice number <span className="required">*</span><input required value={form.invoiceNumber} onChange={event => set('invoiceNumber', event.target.value)} placeholder="INV-1042" /></label><label>Remaining amount due (USD) <span className="required">*</span><input required type="number" min="0.01" step="0.01" value={form.amount} onChange={event => set('amount', event.target.value)} placeholder="4800.00" /></label></div><div className="form-grid two"><label>Invoice date<input type="date" value={form.issueDate} onChange={event => set('issueDate', event.target.value)} /></label><label>Due date <span className="required">*</span><input required type="date" value={form.dueDate} onChange={event => set('dueDate', event.target.value)} /></label></div><label>Client email<input type="email" value={form.email} onChange={event => set('email', event.target.value)} placeholder="ap@client.com" /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="dialog-actions"><button type="button" className="button button-quiet" onClick={requestClose}>Cancel</button><button type="submit" className="button button-primary"><Plus size={17} /> {storageConflict ? 'Keep for backup' : 'Add invoice'}</button></div></form></div>
 }
 
 function GuideModal({ onClose, onRestore }: { onClose: () => void; onRestore: () => void }) {

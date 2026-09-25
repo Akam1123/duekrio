@@ -1,6 +1,6 @@
 # Prepared launch creative — hold
 
-The user has explicitly said not to begin promotion yet. These are prepared drafts, not published posts or sent messages. Duenara is a provisional name, not trademark-cleared. `[VERIFIED_LIVE_URL]` is a literal placeholder, not a live address: replace it only after a compliant host and the branded site have been verified. Do not publish any draft while the placeholder remains. “Free” describes current access to the prototype; it is not a forever-pricing promise. All examples below use fictional situations.
+The user has explicitly said not to begin promotion yet. These are prepared drafts, not published posts or sent messages. Duenara is a provisional name, not trademark-cleared. The public site is now live at [https://duenara.pages.dev/](https://duenara.pages.dev/). `[VERIFIED_LIVE_URL]` remains a deliberate publication placeholder: replace it with the then-current verified URL only after the user starts promotion and the brand, private contact route, page facts, and channel rules are rechecked. Do not publish any draft while the placeholder remains. “Free” describes current access to the prototype; it is not a forever-pricing promise. All examples below use fictional situations.
 
 Prepared artwork: [Duenara social square](../../public/media/duenara-social-square.png) and [Open Graph preview](../../public/og-card.png). Neither has been posted.
 
