@@ -4,6 +4,8 @@
 
 **Status key:** **N/A** means the vulnerable component does not exist in this release; it must be reassessed if the architecture changes. **Mitigated** means a specific control or absence was verified, not that exploitation is impossible. **Partial** means some controls exist and a residual risk remains. **Open** means a material exposure remains to address.
 
+On 26 September 2026, compatibility deployments on both old Cloudflare origins were checked separately for `noindex` and migration guidance toward Orvaket. The Duenara deployment was `cd341ea4`; the [hosting record](HOSTING.md) has its URL and checks. Those checks did not repeat the full encrypted-workspace regression on Orvaket or inspect any visitor's saved invoices.
+
 | # | Concern from the article | Status | Evidence and disposition |
 |---|---|---|---|
 | 1 | Login decisions made in the browser | N/A | There is no login, account, or purported protected route. The workspace is deliberately public code with data kept in each browser; see [App.tsx](../src/App.tsx). |

@@ -4,7 +4,7 @@ Reviewed September 25, 2026 against the [user-supplied Vibe Coded Websites Repor
 
 ## Orvaket free-release check — 26 September 2026
 
-The Cloudflare Pages deployment at [orvaket.pages.dev](https://orvaket.pages.dev/) passed live checks on six free content pages, the fictional board, the template copy action, 404 behavior, browser console, CSP, and automated accessibility at 320, 390, 800, and 1440 px. The six free pages returned HTTP 200 without a `noindex` response header; the inactive kit preview returned `noindex, nofollow`. Live `robots.txt` points to a six-URL `sitemap.xml` on the Orvaket origin. The earlier Duekrio site was separately updated and checked for migration and `noindex`. See [HOSTING.md](HOSTING.md) for deployment evidence. This smoke check does not prove every device, assistive technology, or future upload is correct.
+The Cloudflare Pages deployment at [orvaket.pages.dev](https://orvaket.pages.dev/) passed live checks on six free content pages, the fictional board, the template copy action, 404 behavior, browser console, CSP, and automated accessibility at 320, 390, 800, and 1440 px. The six free pages returned HTTP 200 without a `noindex` response header; the inactive kit preview returned `noindex, nofollow`. Live `robots.txt` points to a six-URL `sitemap.xml` on the Orvaket origin. The earlier Duekrio and Duenara sites were separately updated and checked for migration and `noindex`. See [HOSTING.md](HOSTING.md) for deployment evidence. This smoke check does not prove every device, assistive technology, or future upload is correct.
 
 ## Earlier-host release check
 
