@@ -1,6 +1,6 @@
 # Product brief
 
-Orvaket is the provisional name for this working free browser app. It is not trademark-cleared. The user authorized free-only, zero-cost promotion after the new `https://orvaket.pages.dev/` deployment is verified; no paid checkout is active.
+Orvaket is the provisional name for this working free browser app, live at [orvaket.pages.dev](https://orvaket.pages.dev/) after a checked release on 26 September 2026. It is not trademark-cleared. The user authorized free-only, zero-cost promotion; no paid checkout is active.
 
 ## Problem and user
 

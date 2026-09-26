@@ -1,6 +1,6 @@
 # Orvaket: first-customer plan
 
-Plan drafted 25 September and updated 26 September 2026. Orvaket is the provisional name for the free, local-first app intended for `https://orvaket.pages.dev/`; the renamed deployment must be verified before that address is presented as live. Point-in-time checks belong in [HOSTING.md](HOSTING.md), and brand limitations are in [BRAND.md](BRAND.md). The user has authorized **zero-cash promotion after a verified free-only launch**. This document describes validation; no prospects, pilots, customers, sales, or revenue are claimed here.
+Plan drafted 25 September and updated 26 September 2026. Orvaket is the provisional name for the free, local-first app now live at [orvaket.pages.dev](https://orvaket.pages.dev/). Point-in-time release checks belong in [HOSTING.md](HOSTING.md), and brand limitations are in [BRAND.md](BRAND.md). The user authorized **zero-cash promotion of this verified free release**. A six-URL IndexNow request returned HTTP 202; that is a discovery submission, not proof of search indexing or people using the app. No prospects, pilots, customers, sales, or revenue are claimed here.
 
 ## Positioning
 

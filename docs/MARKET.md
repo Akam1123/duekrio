@@ -2,7 +2,7 @@
 
 Research checked 25 September 2026. This is a **testable business hypothesis**, not evidence of product-market fit or a revenue forecast.
 
-Orvaket is a provisional product name pending wider trademark and actual-use review. Free, zero-cash promotion is authorized after the renamed site is verified live; this thesis records no actual posts, interviews, pilots, or traffic.
+Orvaket is a provisional product name pending wider trademark and actual-use review. The free renamed site is live and zero-cash promotion is authorized. A six-URL IndexNow submission returned HTTP 202, but this thesis records no social post, interview, pilot, user, traffic, or sale.
 
 ## Who has the problem
 
