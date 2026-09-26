@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Orvaket — know why the invoice is stuck</title>
+  <desc id="desc">A free browser workspace for organizing business invoice follow-up. Fictional sample data.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fbfdfa"/><stop offset="1" stop-color="#eaf6ee"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="16" stdDeviation="25" flood-color="#254938" flood-opacity=".13"/></filter>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <circle cx="937" cy="165" r="310" fill="#d9eee0" opacity=".4"/>
+  <circle cx="987" cy="200" r="375" fill="none" stroke="#cce5d6" stroke-width="2"/>
+  <rect x="80" y="79" width="60" height="60" rx="18" fill="#143d3b"/>
+  <circle cx="110" cy="109" r="15" fill="none" stroke="#b5e9d0" stroke-width="8"/>
+  <circle cx="137" cy="82" r="7" fill="#e8b577"/>
+  <text x="158" y="124" fill="#15383b" font-family="Segoe UI, Arial, sans-serif" font-size="44" font-weight="750">Orvaket</text>
+  <text x="80" y="241" fill="#247d69" font-family="Segoe UI, Arial, sans-serif" font-size="22" letter-spacing="3" font-weight="750">FREE BROWSER WORKSPACE</text>
+  <text x="78" y="340" fill="#183b3d" font-family="Segoe UI, Arial, sans-serif" font-size="68" font-weight="750">Know why the</text>
+  <text x="78" y="421" fill="#183b3d" font-family="Segoe UI, Arial, sans-serif" font-size="68" font-weight="750">invoice is</text>
+  <text x="78" y="502" fill="#27866d" font-family="Segoe UI, Arial, sans-serif" font-size="68" font-weight="750">stuck.</text>
+  <text x="80" y="578" fill="#426d64" font-family="Segoe UI, Arial, sans-serif" font-size="28">Track the blocker, owner, and next action.</text>
+  <g filter="url(#shadow)">
+    <rect x="80" y="637" width="920" height="304" rx="22" fill="#fff" stroke="#d7e7db"/>
+    <text x="114" y="688" fill="#193c3b" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="750">Weekly follow-up</text>
+    <rect x="837" y="660" width="127" height="32" rx="8" fill="#f2f8f2"/>
+    <text x="850" y="681" fill="#55816b" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="650">Fictional sample</text>
+    <line x1="114" y1="712" x2="964" y2="712" stroke="#e9f0e9"/>
+    <circle cx="135" cy="762" r="20" fill="#fbe9e2"/>
+    <text x="128" y="769" fill="#b67662" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="750">N</text>
+    <text x="174" y="755" fill="#204541" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">Northstar Studio</text>
+    <text x="174" y="781" fill="#9aaca4" font-family="Segoe UI, Arial, sans-serif" font-size="15">Missing PO · owner: Alex</text>
+    <rect x="114" y="819" width="850" height="93" rx="13" fill="#edf7ef"/>
+    <circle cx="150" cy="865" r="23" fill="#d8eede"/>
+    <text x="135" y="873" fill="#338a69" font-family="Segoe UI, Arial, sans-serif" font-size="27">→</text>
+    <text x="192" y="853" fill="#398b69" font-family="Segoe UI, Arial, sans-serif" font-size="15" letter-spacing="1.3" font-weight="750">NEXT ACTION</text>
+    <text x="192" y="881" fill="#205546" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">Request the signed PO and verify the ledger.</text>
+  </g>
+  <text x="80" y="1018" fill="#4a7768" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700">orvaket.pages.dev</text>
+</svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Orvaket — Know why the invoice is stuck</title>
+  <desc id="desc">A free browser workspace for human-reviewed invoice follow-up. Fictional sample board.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fbfdfa"/><stop offset="1" stop-color="#f0f8f3"/></linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d6eee0"/><stop offset="1" stop-color="#e8f5e8"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="23" flood-color="#254938" flood-opacity=".13"/></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <circle cx="1034" cy="170" r="308" fill="url(#glow)" opacity=".58"/>
+  <circle cx="1086" cy="188" r="368" fill="none" stroke="#cfe7d7" stroke-width="1.5"/>
+  <rect x="66" y="48" width="42" height="42" rx="13" fill="#143d3b"/>
+  <circle cx="87" cy="69" r="10" fill="none" stroke="#b5e9d0" stroke-width="6"/>
+  <circle cx="106" cy="51" r="5" fill="#e8b577"/>
+  <text x="122" y="78" fill="#15383b" font-family="Segoe UI, Arial, sans-serif" font-size="29" font-weight="750">Orvaket</text>
+  <text x="67" y="173" fill="#247d69" font-family="Segoe UI, Arial, sans-serif" font-size="14" letter-spacing="3" font-weight="750">FREE INVOICE FOLLOW-UP WORKSPACE</text>
+  <text x="65" y="247" fill="#183b3d" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="750">Know why the invoice</text>
+  <text x="65" y="312" fill="#27866d" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="750">is stuck.</text>
+  <text x="67" y="405" fill="#426d64" font-family="Segoe UI, Arial, sans-serif" font-size="20">Turn an aging CSV into a clear next move.</text>
+  <text x="67" y="436" fill="#426d64" font-family="Segoe UI, Arial, sans-serif" font-size="20">Track the blocker, owner, and payment promise.</text>
+  <rect x="66" y="523" width="337" height="44" rx="12" fill="#e8f5eb" stroke="#cae5d1"/>
+  <circle cx="88" cy="545" r="4" fill="#53aa77"/>
+  <text x="105" y="552" fill="#225e50" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700">Free to use · Data stays in your browser</text>
+
+  <g filter="url(#shadow)">
+    <rect x="667" y="116" width="477" height="424" rx="20" fill="#fff" stroke="#d7e7db"/>
+    <text x="690" y="155" fill="#193c3b" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="750">Weekly follow-up</text>
+    <rect x="1024" y="133" width="95" height="28" rx="7" fill="#f2f8f2"/>
+    <text x="1038" y="152" fill="#55816b" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="650">Fictional sample</text>
+    <line x1="667" y1="177" x2="1144" y2="177" stroke="#e6eee8"/>
+    <rect x="690" y="196" width="210" height="79" rx="11" fill="#f2f8f4" stroke="#e6eee8"/>
+    <rect x="911" y="196" width="210" height="79" rx="11" fill="#f2f8f4" stroke="#e6eee8"/>
+    <text x="704" y="222" fill="#62877a" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650">Open balance</text>
+    <text x="704" y="258" fill="#183c3c" font-family="Segoe UI, Arial, sans-serif" font-size="23" font-weight="750">$24,700</text>
+    <text x="925" y="222" fill="#62877a" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="650">Needs a next move</text>
+    <text x="925" y="258" fill="#183c3c" font-family="Segoe UI, Arial, sans-serif" font-size="23" font-weight="750">03</text>
+    <line x1="690" y1="297" x2="1122" y2="297" stroke="#e9f0e9"/>
+    <rect x="691" y="308" width="31" height="30" rx="8" fill="#fbe9e2"/><text x="702" y="329" fill="#b67662" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="750">N</text>
+    <text x="737" y="321" fill="#204541" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">Northstar Studio</text>
+    <text x="737" y="337" fill="#9aaca4" font-family="Segoe UI, Arial, sans-serif" font-size="10">INV-1042 · 19 days overdue</text>
+    <rect x="1000" y="311" width="81" height="24" rx="6" fill="#fff0ea"/><text x="1013" y="328" fill="#bb765e" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700">Missing PO</text>
+    <line x1="690" y1="348" x2="1122" y2="348" stroke="#e9f0e9"/>
+    <rect x="691" y="359" width="31" height="30" rx="8" fill="#e6f3e9"/><text x="702" y="380" fill="#5c9771" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="750">F</text>
+    <text x="737" y="372" fill="#204541" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">Fieldstone Partners</text>
+    <text x="737" y="388" fill="#9aaca4" font-family="Segoe UI, Arial, sans-serif" font-size="10">INV-1068 · 11 days overdue</text>
+    <rect x="1011" y="362" width="70" height="24" rx="6" fill="#fff4df"/><text x="1025" y="379" fill="#b48a46" font-family="Segoe UI, Arial, sans-serif" font-size="10" font-weight="700">Dispute</text>
+    <rect x="690" y="417" width="432" height="98" rx="11" fill="#edf7ef"/>
+    <circle cx="723" cy="465" r="18" fill="#d8eede"/>
+    <text x="712" y="473" fill="#338a69" font-family="Segoe UI, Arial, sans-serif" font-size="21">→</text>
+    <text x="754" y="452" fill="#398b69" font-family="Segoe UI, Arial, sans-serif" font-size="11" letter-spacing="1.1" font-weight="750">NEXT ACTION</text>
+    <text x="754" y="477" fill="#205546" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">Request the signed PO from Northstar</text>
+  </g>
+</svg>

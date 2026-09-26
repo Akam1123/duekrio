@@ -68,11 +68,11 @@ const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024
 const MAX_ENCRYPTED_BACKUP_FILE_BYTES = 16 * 1024 * 1024
 const sampleCsvUrl = (window as Window & { __DUENARA_SAMPLE_CSV_URL__?: string }).__DUENARA_SAMPLE_CSV_URL__
   ?? `${import.meta.env.BASE_URL}sample-ar-aging.csv`
-const contentBaseUrl = window.location.protocol === 'file:' ? 'https://duekrio.pages.dev/' : import.meta.env.BASE_URL
+const contentBaseUrl = window.location.protocol === 'file:' ? 'https://orvaket.pages.dev/' : import.meta.env.BASE_URL
 const sharedPreviewHost = window.location.hostname === 'akam1123.github.io'
-const legacyCloudflareHost = window.location.hostname === 'duenara.pages.dev'
+const legacyCloudflareHost = ['duenara.pages.dev', 'duekrio.pages.dev'].includes(window.location.hostname)
 const legacyAddress = sharedPreviewHost || legacyCloudflareHost
-const dedicatedSiteUrl = 'https://duekrio.pages.dev/'
+const dedicatedSiteUrl = 'https://orvaket.pages.dev/'
 const dedicatedWorkspaceUrl = `${dedicatedSiteUrl}#/app`
 const today = () => {
   const now = new Date()
@@ -222,15 +222,15 @@ function useRoute(): [View, (view: View) => void] {
 }
 
 function Brand({ onClick }: { onClick: () => void }) {
-  return <button className="brand" onClick={onClick} aria-label="Duekrio home">
+  return <button className="brand" onClick={onClick} aria-label="Orvaket home">
     <span className="brand-mark"><span /></span>
-    <span>Due<span className="brand-soft">krio</span></span>
+    <span>Orva<span className="brand-soft">ket</span></span>
   </button>
 }
 
 function LegacyDataCaution() {
   if (!sharedPreviewHost) return null
-  return <p className="preview-data-caution"><CircleAlert size={16} /><span>This old GitHub address shares browser storage with other projects on its origin. Browser storage is readable unless you explicitly enable local encryption. Use <a href={dedicatedSiteUrl} target="_blank" rel="noopener noreferrer">duekrio.pages.dev</a> for new work. To move saved work, download a JSON backup here and restore it there. CSV and plain JSON exports remain readable; a passphrase-encrypted JSON backup is available.</span></p>
+  return <p className="preview-data-caution"><CircleAlert size={16} /><span>This old GitHub address shares browser storage with other projects on its origin. Browser storage is readable unless you explicitly enable local encryption. Use <a href={dedicatedSiteUrl} target="_blank" rel="noopener noreferrer">orvaket.pages.dev</a> for new work. To move saved work, download a JSON backup here and restore it there. CSV and plain JSON exports remain readable; a passphrase-encrypted JSON backup is available.</span></p>
 }
 
 function Landing({ openApp, startSample, sampleAvailable, lockedOpen, onLock }: { openApp: () => void; startSample: () => void; sampleAvailable: boolean; lockedOpen: boolean; onLock: () => void }) {
@@ -251,24 +251,24 @@ function Landing({ openApp, startSample, sampleAvailable, lockedOpen, onLock }: 
 
     {lockedOpen && <aside className="lock-session-banner wrap" role="status"><span>Your encrypted workspace is unlocked in this tab until you lock it or reload.</span><button type="button" onClick={onLock}><LockKeyhole size={16} /> Lock workspace</button></aside>}
 
-    {legacyAddress && <aside className="legacy-migration wrap" aria-label="Duekrio's current address"><div><strong>Duekrio is now at duekrio.pages.dev.</strong><p>Browser data saved on this older address stays here. Open this workspace and download a JSON backup, unlocking it first if needed. Restore it on the new address and verify your invoices before clearing the older copy.</p></div><div className="legacy-migration-actions"><button type="button" onClick={openApp}>Open old workspace</button><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duekrio.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
+    {legacyAddress && <aside className="legacy-migration wrap" aria-label="Orvaket's current address"><div><strong>Orvaket is now at orvaket.pages.dev.</strong><p>Browser data saved on this older address stays here. Open this workspace and download a JSON backup, unlocking it first if needed. Restore it on the new address and verify your invoices before clearing the older copy.</p></div><div className="legacy-migration-actions"><button type="button" onClick={openApp}>Open old workspace</button><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open orvaket.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
 
     <main>
       <section className="hero wrap">
         <div className="hero-copy">
           <div className="eyebrow"><span className="eyebrow-dot" /> A clearer way to work your receivables</div>
           <h1>Every unpaid invoice has a reason. <em>Give it a next move.</em></h1>
-          <p className="hero-intro">An aging report tells you what is overdue. Duekrio helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
+          <p className="hero-intro">An aging report tells you what is overdue. Orvaket helps you track <strong>why</strong>, <strong>who owns the next step</strong>, and <strong>what happens next</strong>—alongside your accounting software.</p>
           <div className="hero-actions">
             <button className="button button-primary button-large" onClick={openApp}>Open free workspace <ArrowRight size={19} /></button>
             {sampleAvailable ? <button className="text-link text-link-button" onClick={startSample}>Explore sample data <ArrowRight size={17} /></button> : <a className="text-link" href="#how-it-works">See how it works <ArrowDownToLine size={17} /></a>}
           </div>
           <div className="hero-trust"><ShieldCheck size={17} /><span>No account · No bank connection · Browser-only storage. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span></div>
         </div>
-        <div className="hero-visual" aria-label="Illustration of the Duekrio action board">
+        <div className="hero-visual" aria-label="Illustration of the Orvaket action board">
           <div className="visual-glow" />
           <div className="mock-window">
-            <div className="mock-top"><span className="mock-icon">d</span><span>Action queue</span><span className="mock-pill">Illustrative data</span></div>
+            <div className="mock-top"><span className="mock-icon">o</span><span>Action queue</span><span className="mock-pill">Illustrative data</span></div>
             <div className="mock-metrics"><div><small>Open balance</small><strong>$24,700</strong></div><div><small>Needs a next move</small><strong>03 <span>invoices</span></strong></div></div>
             <div className="mock-row"><div className="mock-avatar coral">N</div><div className="mock-name"><strong>Northstar Studio</strong><small>INV-1042 · 19 days overdue</small></div><span className="mock-tag red">Missing PO</span><strong>$4,800</strong></div>
             <div className="mock-row"><div className="mock-avatar sage">F</div><div className="mock-name"><strong>Fieldstone Partners</strong><small>INV-1068 · 11 days overdue</small></div><span className="mock-tag amber">Dispute</span><strong>$7,200</strong></div>
@@ -301,10 +301,10 @@ function Landing({ openApp, startSample, sampleAvailable, lockedOpen, onLock }: 
         <div className="resource-grid"><a href={`${contentBaseUrl}resources/weekly-ar-review-checklist/`} className="resource-card"><span>WORKFLOW GUIDE</span><h3>Weekly AR review checklist</h3><p>From a current aging report to one owner and one next action for every exception.</p><b>Read the checklist <ArrowRight size={17} /></b></a><a href={`${contentBaseUrl}resources/overdue-invoice-email-templates/`} className="resource-card"><span>COMMUNICATION GUIDE</span><h3>Overdue invoice email templates</h3><p>Copyable messages to edit and review for a status check, a missing document, and a payment promise.</p><b>See the templates <ArrowRight size={17} /></b></a></div>
       </section>
 
-      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>Duekrio is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does Duekrio send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
+      <section className="faq-section" aria-labelledby="faq-title"><div className="wrap faq-grid"><div><span className="kicker">THE IMPORTANT DETAILS</span><h2 id="faq-title">Know exactly what this version does.</h2><p>Orvaket is a focused first release. You stay in control of the source ledger, customer messages, and backups.</p></div><div className="faq-list"><details><summary>Where is my invoice data stored?</summary><p>In this browser on this device. There is no account or cloud sync. Export a JSON backup regularly, especially before clearing site data or changing devices. <a href={`${contentBaseUrl}privacy/`}>Read the privacy details.</a></p></details><details><summary>Can my teammates log in to the same board?</summary><p>No. The owner field is an organizational label in your local workspace. Team accounts, permissions, and sync are not in this release.</p></details><details><summary>Does Orvaket send reminders or collect payments?</summary><p>No. It prepares a draft for you to review and send through your own email app. Confirm payment in your accounting system before marking an invoice paid.</p></details><details><summary>Which CSV exports work?</summary><p>A flat file with customer, invoice number, remaining amount due, and due date. This release treats amounts as USD and dates as YYYY-MM-DD or US M/D/YYYY. The import preview shows skipped rows before anything changes.</p></details><details><summary>Is it free?</summary><p>Yes, this public early-access workspace is free. There is no payment step or paid account. Future pricing, if any, would be announced separately.</p></details></div></div></section>
     </main>
 
-    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href={`${contentBaseUrl}terms/`}>Use terms</a><a href="mailto:arielfaber123@gmail.com">Contact</a><a href="https://github.com/Akam1123/duekrio" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
+    <footer className="site-footer wrap"><Brand onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><span>Make the next move clear.</span><div className="site-footer-links"><a href={`${contentBaseUrl}resources/`}>Resources</a><a href={`${contentBaseUrl}privacy/`}>Privacy</a><a href={`${contentBaseUrl}terms/`}>Use terms</a><a href="mailto:arielfaber123@gmail.com">Contact</a><a href="https://github.com/Akam1123/orvaket" target="_blank" rel="noreferrer">Source & feedback <ArrowUpRight size={14} /></a></div></footer>
   </div>
 }
 
@@ -543,7 +543,7 @@ function App() {
   function downloadLockedRaw(): void {
     const raw = lockedRawRef.current
     if (!raw) return
-    saveDownload(raw, `duekrio-locked-raw-${asOf}.json`, 'application/json')
+    saveDownload(raw, `orvaket-locked-raw-${asOf}.json`, 'application/json')
     rawPreparedExpectedRef.current = raw
     rawPreparedKeyRef.current = LOCKED_WORKSPACE_STORAGE_KEY
     rawVerificationAttemptRef.current += 1
@@ -672,7 +672,7 @@ function App() {
     if (raw === null || raw !== legacyRawRef.current) throw new Error('The older browser copy changed. Reload and review it before backing it up.')
     const snapshot = parseStoredPlainWorkspace(raw)
     const encrypted = await encryptWorkspaceJson(snapshot, passphrase)
-    saveDownload(encrypted, `duekrio-older-browser-copy-${asOf}.encrypted.json`, 'application/json')
+    saveDownload(encrypted, `orvaket-older-browser-copy-${asOf}.encrypted.json`, 'application/json')
   }
 
   async function removeLegacyCopyAfterBackup(file: File, passphrase: string): Promise<boolean> {
@@ -926,7 +926,7 @@ function App() {
 
   function downloadCorruptCopy() {
     if (saved.corruptRaw === undefined) return
-    saveDownload(saved.corruptRaw, `duekrio-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
+    saveDownload(saved.corruptRaw, `orvaket-unreadable-data-${asOf}.txt`, 'text/plain;charset=utf-8')
     rawPreparedExpectedRef.current = saved.corruptRaw
     rawPreparedKeyRef.current = WORKSPACE_STORAGE_KEY
     rawVerificationAttemptRef.current += 1
@@ -1056,17 +1056,17 @@ function App() {
   }
   function downloadPlainBackup() {
     const content = exportWorkspaceJson(backupSnapshot())
-    saveDownload(content, `duekrio-backup-${asOf}.json`, 'application/json')
+    saveDownload(content, `orvaket-backup-${asOf}.json`, 'application/json')
     finishBackupRequest(content)
     setToast({ text: 'Plain JSON backup downloaded. Protect this readable file.', kind: 'warn' })
   }
   async function downloadEncryptedBackup(passphrase: string) {
     const encrypted = await encryptWorkspaceJson(backupSnapshot(), passphrase)
-    saveDownload(encrypted, `duekrio-backup-${asOf}.encrypted.json`, 'application/json')
+    saveDownload(encrypted, `orvaket-backup-${asOf}.encrypted.json`, 'application/json')
     finishBackupRequest(encrypted)
     setToast({ text: 'Encrypted JSON backup downloaded. Keep the passphrase separately; it cannot be recovered.', kind: 'good' })
   }
-  const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `duekrio-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
+  const downloadCsv = () => saveDownload(exportInvoicesCsv(invoices), `orvaket-invoices-${asOf}.csv`, 'text/csv;charset=utf-8')
 
   function downloadConflictBackup() {
     setConflictBackupDownloaded(false)
@@ -1130,7 +1130,7 @@ function App() {
     : storageConflict
       ? 'Another tab changed this workspace. Follow the recovery steps below and download this tab’s copy before moving to the new address.'
       : invoices.length
-        ? `This browser keeps data for the two addresses separately. Download a JSON backup here, then restore it at duekrio.pages.dev and verify the invoices before clearing the older copy. ${lockedMode ? 'This workspace is encrypted locally while locked; plain JSON and CSV downloads are still readable.' : 'Local browser storage is readable until you enable workspace encryption.'}`
+        ? `This browser keeps data for the two addresses separately. Download a JSON backup here, then restore it at orvaket.pages.dev and verify the invoices before clearing the older copy. ${lockedMode ? 'This workspace is encrypted locally while locked; plain JSON and CSV downloads are still readable.' : 'Local browser storage is readable until you enable workspace encryption.'}`
         : 'No invoices are loaded here. Open the new address to start, or restore an existing JSON backup there. Data from this address does not transfer automatically.'
 
   return <div className="app-shell">
@@ -1159,7 +1159,7 @@ function App() {
         <div className="title-actions"><button className="button button-secondary" onClick={() => setShowAdd(true)} disabled={loadBlocked || storageConflict}><Plus size={17} /> Add invoice</button><button className="button button-quiet" onClick={downloadCsv} disabled={!invoices.length}><ArrowDownToLine size={17} /> Export CSV</button></div>
       </div>
 
-      {legacyAddress && <aside className="legacy-migration" aria-label="Duekrio's current address"><div><strong>Duekrio is now at duekrio.pages.dev.</strong><p>{migrationCopy}</p></div><div className="legacy-migration-actions">{!loadBlocked && !storageConflict && invoices.length > 0 && <button type="button" onClick={downloadBackup}>Backup options</button>}<a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duekrio.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
+      {legacyAddress && <aside className="legacy-migration" aria-label="Orvaket's current address"><div><strong>Orvaket is now at orvaket.pages.dev.</strong><p>{migrationCopy}</p></div><div className="legacy-migration-actions">{!loadBlocked && !storageConflict && invoices.length > 0 && <button type="button" onClick={downloadBackup}>Backup options</button>}<a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open orvaket.pages.dev <ArrowUpRight size={15} /></a></div></aside>}
 
       {!loadBlocked && !storageConflict && <div className="browser-storage-note"><LockKeyhole size={17} /><span role="status">{displayedSaveState === 'failed' ? 'Changes are not saved in this browser.' : displayedSaveState === 'saving' ? 'Saving changes in this browser…' : storageWarning ? 'Browser storage could not be verified.' : lockedMode ? 'Current workspace saved encrypted in this browser.' : 'Saved without encryption in this browser only.'} {lockedMode && legacyCopyPresent ? 'An older readable copy remains in browser storage and is not protected by this lock. ' : ''}There is no online backup or team sync. <a href={`${contentBaseUrl}privacy/`}>How your data works</a></span>{lockedMode ? <button onClick={lockWorkspaceNow}><LockKeyhole size={15} /> Lock now</button> : <button onClick={() => setShowLockSetup(true)}><LockKeyhole size={15} /> Encrypt workspace</button>}<button onClick={downloadBackup} disabled={!invoices.length}>Backup options <ArrowDownToLine size={15} /></button></div>}
 
@@ -1215,7 +1215,7 @@ function App() {
             </tr>)}
           </tbody></table>{rows.length === 0 && <div className="no-results"><Inbox size={28} /><strong>No invoices match this view.</strong><span>Try another filter or search.</span></div>}</div>
         </section>
-        <div className="workspace-footer"><div><LockKeyhole size={15} /> {lockedMode ? 'Encrypted local copy. Lock this tab after use and back up regularly.' : 'Stored in this browser only. Back up regularly.'}</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href={`${contentBaseUrl}terms/`}>Use terms</a><span>·</span><a href="https://github.com/Akam1123/duekrio/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
+        <div className="workspace-footer"><div><LockKeyhole size={15} /> {lockedMode ? 'Encrypted local copy. Lock this tab after use and back up regularly.' : 'Stored in this browser only. Back up regularly.'}</div><div><button onClick={() => restoreInput.current?.click()}>Restore backup</button><span>·</span><a href={`${contentBaseUrl}terms/`}>Use terms</a><span>·</span><a href="https://github.com/Akam1123/orvaket/issues/new?template=feedback.yml" target="_blank" rel="noreferrer">Send feedback <ArrowUpRight size={13} /></a></div></div>
       </>}
     </main>
 
@@ -1283,13 +1283,13 @@ function LockedWorkspaceGate({ issue, rawAvailable, rawPrepared, rawDownloaded, 
       setRecoveryError(cause instanceof Error ? cause.message : 'Recovery failed. No saved copy was removed.')
     } finally { setRecoveryBusy(false) }
   }
-  return <div className="app-shell"><header className="app-header"><div className="app-header-inner wrap"><Brand onClick={() => { window.location.hash = '/' }} /><span className="workspace-label">Encrypted local workspace</span></div></header>{legacyAddress && <aside className="legacy-migration wrap" aria-label="Duekrio's current address"><div><strong>Duekrio is now at duekrio.pages.dev.</strong><p>Unlock this older workspace, download a JSON backup, then restore and verify it at the new address. Browser data does not move automatically.</p></div><div className="legacy-migration-actions"><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open duekrio.pages.dev <ArrowUpRight size={15} /></a></div></aside>}<main className="app-main wrap"><section className="recovery-panel locked-gate" aria-labelledby="locked-title"><div className="recovery-icon"><LockKeyhole size={30} /></div><span className="kicker">LOCAL WORKSPACE LOCK</span><h1 id="locked-title">Unlock your workspace.</h1><p>Your invoices are stored as encrypted browser data. The passphrase stays in this tab and is not sent to Duekrio. This tab stays unlocked until you lock it or reload.</p>
+  return <div className="app-shell"><header className="app-header"><div className="app-header-inner wrap"><Brand onClick={() => { window.location.hash = '/' }} /><span className="workspace-label">Encrypted local workspace</span></div></header>{legacyAddress && <aside className="legacy-migration wrap" aria-label="Orvaket's current address"><div><strong>Orvaket is now at orvaket.pages.dev.</strong><p>Unlock this older workspace, download a JSON backup, then restore and verify it at the new address. Browser data does not move automatically.</p></div><div className="legacy-migration-actions"><a href={dedicatedWorkspaceUrl} target="_blank" rel="noopener noreferrer">Open orvaket.pages.dev <ArrowUpRight size={15} /></a></div></aside>}<main className="app-main wrap"><section className="recovery-panel locked-gate" aria-labelledby="locked-title"><div className="recovery-icon"><LockKeyhole size={30} /></div><span className="kicker">LOCAL WORKSPACE LOCK</span><h1 id="locked-title">Unlock your workspace.</h1><p>Your invoices are stored as encrypted browser data. The passphrase stays in this tab and is not sent to Orvaket. This tab stays unlocked until you lock it or reload.</p>
     {issue ? <div className="notice warning" role="alert"><CircleAlert size={19} /><span>{issue} No existing browser copy was changed.</span></div> : <form onSubmit={event => void submit(event)}><div className="form-grid"><label>Workspace passphrase<input type="password" autoComplete="off" spellCheck={false} required value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label></div>{error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}<div className="recovery-actions"><button type="submit" className="button button-primary" disabled={busy}><LockKeyhole size={17} /> {busy ? 'Unlocking and verifying…' : 'Unlock workspace'}</button></div></form>}
     <div className="locked-gate-actions">{rawAvailable && <button type="button" className="button button-secondary" onClick={onDownloadRaw}><ArrowDownToLine size={17} /> 1. Download exact encrypted raw copy</button>}{rawPrepared && <><input ref={rawVerifyInput} type="file" accept=".json,application/json" className="sr-only" aria-label="Choose downloaded encrypted raw copy for byte verification" onChange={event => { void onVerifyRaw(event.target.files?.[0]); event.target.value = '' }} /><button type="button" className="button button-secondary" onClick={() => rawVerifyInput.current?.click()}><FileUp size={17} /> 2. Select that file to verify</button></>}<button type="button" className="button button-quiet" onClick={() => window.location.reload()}>Retry reading storage</button></div>
     {rawVerificationError && <p className="form-error" role="alert">{rawVerificationError}</p>}
     {legacyCopyPresent && <p className="locked-legacy-note"><CircleAlert size={17} /> An older unencrypted browser copy is still present. The lock does not protect that older copy. It will not be changed or deleted automatically.</p>}
     <details className="locked-recovery"><summary>Recover from an older copy or JSON backup</summary><p>Recovery replaces the encrypted browser copy only after the source has been validated and the new encrypted write has been verified. Download the exact raw copy above and select the saved file to verify its bytes before replacement.</p><form onSubmit={event => void recover(event)}><div className="form-grid"><label>Recovery source<select value={recoverySource} onChange={event => { setRecoverySource(event.target.value as 'legacy' | 'backup'); setRecoveryError('') }}>{legacyCopyPresent && <option value="legacy">Older unencrypted browser copy</option>}<option value="backup">JSON backup file</option></select></label>{recoverySource === 'backup' && <><label>JSON backup file<input type="file" accept=".json,application/json" onChange={event => setRecoveryFile(event.target.files?.[0] ?? null)} /></label><label>Backup passphrase, if the file is encrypted<input type="password" autoComplete="off" value={backupPassphrase} onChange={event => setBackupPassphrase(event.target.value)} /></label></>}<label>New workspace passphrase<input type="password" autoComplete="new-password" required minLength={MIN_LOCK_PASSPHRASE_LENGTH} value={newPassphrase} onChange={event => setNewPassphrase(event.target.value)} /></label><label>Confirm new passphrase<input type="password" autoComplete="new-password" required value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label></div>{recoveryError && <p className="form-error" role="alert"><CircleAlert size={16} /> {recoveryError}</p>}<button type="submit" className="button button-secondary" disabled={recoveryBusy || (rawAvailable && !rawDownloaded)}>{recoveryBusy ? 'Checking and restoring…' : 'Restore encrypted workspace'}</button>{rawAvailable && !rawDownloaded && <small>Recovery unlocks after the selected raw file matches the current browser copy byte for byte.</small>}</form></details>
-    <small>If you lose the passphrase, Duekrio cannot recover this encrypted copy. Keep an encrypted JSON backup in a safe place.</small>
+    <small>If you lose the passphrase, Orvaket cannot recover this encrypted copy. Keep an encrypted JSON backup in a safe place.</small>
   </section></main></div>
 }
 
@@ -1315,7 +1315,7 @@ function LockSetupModal({ legacyCopyPresent, onClose, onCreate }: {
     }
   }
   return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}><form ref={dialogRef} className="dialog backup-dialog" role="dialog" aria-modal="true" aria-labelledby="lock-setup-title" onSubmit={event => void submit(event)}><div className="dialog-head"><div><span className="drawer-kicker">OPTIONAL LOCAL ENCRYPTION</span><h2 id="lock-setup-title">Encrypt this workspace</h2><p>Use a passphrase to protect future browser saves on this device.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close encryption setup"><X size={20} /></button></div>
-    <p className="field-hint">The encrypted copy is verified before this tab switches to it. Your passphrase stays in memory only while the tab is unlocked. Duekrio cannot reset it; keep a separate encrypted backup.</p>
+    <p className="field-hint">The encrypted copy is verified before this tab switches to it. Your passphrase stays in memory only while the tab is unlocked. Orvaket cannot reset it; keep a separate encrypted backup.</p>
     {legacyCopyPresent && <p className="preview-data-caution"><CircleAlert size={17} /><span>Your existing unencrypted browser copy will remain untouched. Until you separately remove that older copy after verifying a backup, this device still has readable invoice data.</span></p>}
     <div className="form-grid"><label>New workspace passphrase<input type="password" autoComplete="new-password" spellCheck={false} required minLength={MIN_LOCK_PASSPHRASE_LENGTH} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label><label>Confirm passphrase<input type="password" autoComplete="new-password" spellCheck={false} required value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} /></label></div>
     {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
@@ -1353,7 +1353,7 @@ function LegacyCleanupModal({ onClose, onDownload, onRemove }: {
     } finally { setBusy(false) }
   }
   return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose() }}><div ref={dialogRef} className="dialog backup-dialog legacy-cleanup-dialog" role="dialog" aria-modal="true" aria-labelledby="cleanup-title"><div className="dialog-head"><div><span className="drawer-kicker">PROTECT THE OLDER COPY</span><h2 id="cleanup-title">Remove readable browser data</h2><p>The current encrypted workspace stays in place.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close old copy cleanup"><X size={20} /></button></div>
-    <p className="field-hint">First download a passphrase-encrypted backup of the older copy. Then select that file again. Duekrio decrypts and compares it with the exact older copy before offering to remove only the readable browser entry.</p>
+    <p className="field-hint">First download a passphrase-encrypted backup of the older copy. Then select that file again. Orvaket decrypts and compares it with the exact older copy before offering to remove only the readable browser entry.</p>
     <div className="form-grid"><label>Backup passphrase<input type="password" autoComplete="new-password" spellCheck={false} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} /></label><label>Confirm backup passphrase<input type="password" autoComplete="new-password" spellCheck={false} value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} /></label></div>
     <button type="button" className="button button-secondary" disabled={busy} onClick={() => void download()}><ArrowDownToLine size={17} /> 1. Download encrypted backup</button>
     {downloaded && <div className="form-grid cleanup-verify"><label>Choose that downloaded encrypted JSON file<input type="file" accept=".json,application/json" onChange={event => setFile(event.target.files?.[0] ?? null)} /></label><p className="field-hint">The old copy will be removed only after the selected file decrypts to the matching data and the current encrypted workspace is verified again. Close any other tabs using this site before this step.</p></div>}
@@ -1429,7 +1429,7 @@ function AddInvoiceModal({ onClose, onAdd, replacingDemo, storageConflict }: { o
 
 function GuideModal({ locked, legacyCopyPresent, onClose, onRestore }: { locked: boolean; legacyCopyPresent: boolean; onClose: () => void; onRestore: () => void }) {
   const dialogRef = useDialogFocus<HTMLDivElement>(onClose)
-  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Duekrio</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>{locked ? `Current browser saves are encrypted with your workspace passphrase.${legacyCopyPresent ? ' An older readable copy remains until you back it up, verify it and remove it explicitly.' : ''} The tab stays unlocked until you lock it or reload.` : 'Browser storage is readable until you enable workspace encryption.'} There is no login or team sync. Use encrypted JSON backups and keep the passphrase separately; Duekrio cannot recover it. Plain JSON and CSV exports remain readable. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
+  return <div className="modal-backdrop modal-centered" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div ref={dialogRef} className="dialog guide" role="dialog" aria-modal="true" aria-labelledby="guide-title"><div className="dialog-head"><div><span className="drawer-kicker">QUICK GUIDE</span><h2 id="guide-title">Working with Orvaket</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></div><div className="guide-content"><section><span>01</span><div><h3>Get invoices in</h3><p>Export an open invoices or aging CSV from your ledger. Include customer, invoice number, due date and remaining amount due. If both Amount and Balance appear, Balance is preferred. Email and invoice date are optional. Import the same file again later to refresh amounts and dates; your resolution notes stay attached. Review items absent from a new snapshot and those marked paid locally that still appear.</p></div></section><section><span>02</span><div><h3>Work one blocker at a time</h3><p>Open an invoice to record the reason it is stuck, a next action, its owner and due date, plus any customer payment promise. Set status to Paid only when your ledger confirms receipt.</p></div></section><section><span>03</span><div><h3>Keep your own copy</h3><p>{locked ? `Current browser saves are encrypted with your workspace passphrase.${legacyCopyPresent ? ' An older readable copy remains until you back it up, verify it and remove it explicitly.' : ''} The tab stays unlocked until you lock it or reload.` : 'Browser storage is readable until you enable workspace encryption.'} There is no login or team sync. Use encrypted JSON backups and keep the passphrase separately; Orvaket cannot recover it. Plain JSON and CSV exports remain readable. Do not include bank credentials or sensitive document contents in notes.</p></div></section></div><div className="guide-actions"><a href={sampleCsvUrl} download="sample-ar-aging.csv">Sample CSV <ArrowDownToLine size={16} /></a><button onClick={onRestore}>Restore JSON backup <ArrowRight size={16} /></button></div></div></div>
 }
 
 function BackupModal({ locked, legacyCopyPresent, onClose, onPlain, onEncrypted }: { locked: boolean; legacyCopyPresent: boolean; onClose: () => void; onPlain: () => void; onEncrypted: (passphrase: string) => Promise<void> }) {
@@ -1454,7 +1454,7 @@ function BackupModal({ locked, legacyCopyPresent, onClose, onPlain, onEncrypted 
       <div className="dialog-head"><div><span className="drawer-kicker">BACK UP YOUR WORK</span><h2 id="backup-title">Choose a JSON backup</h2><p>Encrypted is safer for a file you will store or move.</p></div><button type="button" className="icon-button" disabled={busy} onClick={onClose} aria-label="Close backup options"><X size={20} /></button></div>
       <p className="field-hint">{locked ? `Current browser saves are encrypted.${legacyCopyPresent ? ' An older readable browser copy remains until you remove it.' : ''}` : 'This browser workspace is readable.'} Plain JSON and CSV exports are readable. Only the downloaded encrypted backup file is protected by its backup passphrase.</p>
       <div className="form-grid"><label>Backup passphrase<input type="password" autoComplete="off" spellCheck={false} value={passphrase} onChange={event => { setPassphrase(event.target.value); setError('') }} minLength={MIN_BACKUP_PASSPHRASE_LENGTH} placeholder="At least 16 characters" /></label><label>Repeat passphrase<input type="password" autoComplete="off" spellCheck={false} value={confirmation} onChange={event => { setConfirmation(event.target.value); setError('') }} placeholder="Enter the same passphrase" /></label></div>
-      <p className="field-hint">Use a long, unique passphrase and keep it separately. Duekrio cannot recover the file if you lose it. The passphrase is not sent or saved by Duekrio.</p>
+      <p className="field-hint">Use a long, unique passphrase and keep it separately. Orvaket cannot recover the file if you lose it. The passphrase is not sent or saved by Orvaket.</p>
       {error && <p className="form-error" role="alert"><CircleAlert size={16} /> {error}</p>}
       <div className="dialog-actions"><button type="button" className="button button-quiet" disabled={busy} onClick={onPlain}>Download readable JSON</button><button type="submit" className="button button-primary" disabled={busy}><LockKeyhole size={17} /> {busy ? 'Encrypting…' : 'Download encrypted JSON'}</button></div>
     </form></div>

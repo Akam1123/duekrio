@@ -36,6 +36,7 @@ const inlineHashes = (html, tag) => {
 
 const files = [
   ...await htmlFiles(dist),
+  path.join(root, 'Orvaket-offline.html'),
   path.join(root, 'Duekrio-offline.html'),
   path.join(root, 'Duenara-offline.html'),
   path.join(root, 'PromiseLedger-offline.html'),
