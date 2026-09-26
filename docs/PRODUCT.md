@@ -1,10 +1,10 @@
 # Product brief
 
-Duekrio is the provisional name for this working prototype. It is not trademark-cleared, and marketing is on hold.
+Orvaket is the provisional name for this working free browser app, live at [orvaket.pages.dev](https://orvaket.pages.dev/) after a checked release on 26 September 2026. It is not trademark-cleared. The user authorized free-only, zero-cost promotion; no paid checkout is active.
 
 ## Problem and user
 
-Small B2B service firms often have open invoices spread across an accounting report, an inbox, and individual teammates' notes. The AR balance identifies what is unpaid, but it does not always capture the reason or the next human action. Duekrio is for a 5–30 person team whose founder, operations lead, or finance coordinator owns customer follow-up.
+Small B2B service firms often have open invoices spread across an accounting report, an inbox, and individual teammates' notes. The AR balance identifies what is unpaid, but it does not always capture the reason or the next human action. Orvaket targets an operator at a 5–30 person firm whose founder, operations lead, or finance coordinator owns customer follow-up. Its local owner field does not provide shared team access.
 
 ## Product promise
 
@@ -46,7 +46,7 @@ The importer currently treats amounts as USD, accepts ISO or US month/day/year d
 
 ## Validation before expansion
 
-Pilot with a handful of B2B service teams using sample or authorized AR exports. Observe whether the board becomes the weekly follow-up list, whether owners keep next actions current, and whether drafts save time without reducing message quality. Ask for payment before assuming the workflow has commercial value. Do not infer revenue, collection-rate improvement, or customer demand from a working demo.
+Pilot with a handful of B2B service operators using sample or authorized AR exports. Observe whether the board becomes the weekly follow-up list, whether owners keep next actions current, and whether drafts save time without reducing message quality. Test payment demand only in a later, separately enabled paid phase. Do not infer revenue, collection-rate improvement, or customer demand from a working demo.
 
 ## Honest roadmap
 

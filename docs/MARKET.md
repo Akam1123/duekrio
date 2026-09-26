@@ -1,20 +1,20 @@
-# Duekrio: market thesis
+# Orvaket: market thesis
 
 Research checked 25 September 2026. This is a **testable business hypothesis**, not evidence of product-market fit or a revenue forecast.
 
-Duekrio is a provisional product name pending trademark and availability checks. No promotion has started.
+Orvaket is a provisional product name pending wider trademark and actual-use review. The free renamed site is live and zero-cash promotion is authorized. A six-URL IndexNow submission returned HTTP 202, but this thesis records no social post, interview, pilot, user, traffic, or sale.
 
 ## Who has the problem
 
 Start with owner-led B2B service firms with roughly 5–30 staff, 20–200 open invoices per month, and no dedicated collections team. Examples include small consultancies, implementation firms, and creative or technical agencies. The narrower entry point is a firm already invoicing in QuickBooks or Xero that still uses a spreadsheet, inbox, or weekly meeting to answer: *Which overdue invoices are blocked, who must act, and when has the customer promised to pay?* The staff and invoice bands are targeting assumptions to test, not published market counts.
 
-Duekrio's proposed job is to turn an accounts-receivable aging export into a follow-up queue: record the reason for delay, the person responsible, next action, payment commitment, and outcome. Its value must come from making exceptions visible and moving them toward resolution. Routine reminder emails are already built into accounting products.
+Orvaket's proposed job is to turn an accounts-receivable aging export into a follow-up queue: record the reason for delay, the person responsible, next action, payment commitment, and outcome. Its value must come from making exceptions visible and moving them toward resolution. Routine reminder emails are already built into accounting products.
 
 ## Evidence and its limits
 
 | Observation | What it supports | What it does **not** establish |
 | --- | --- | --- |
-| [Intuit QuickBooks' 2026 US small-business report](https://quickbooks.intuit.com/r/small-business-data/small-business-late-payments-report-2026/) says 59% had invoices more than 30 days overdue; businesses with unpaid invoices were owed $17,700 on average. | Late payment is widespread and financially relevant. | That these firms need another app, or that Duekrio would collect the money. The survey is commissioned by a vendor with an interest in the category. |
+| [Intuit QuickBooks' 2026 US small-business report](https://quickbooks.intuit.com/r/small-business-data/small-business-late-payments-report-2026/) says 59% had invoices more than 30 days overdue; businesses with unpaid invoices were owed $17,700 on average. | Late payment is widespread and financially relevant. | That these firms need another app, or that Orvaket would collect the money. The survey is commissioned by a vendor with an interest in the category. |
 | [QuickBooks Online](https://quickbooks.intuit.com/learn-support/en-us/help-article/invoicing/send-invoice-reminders-automatically-manually/L84cQjpxo_US_en_US) offers up to three scheduled invoice reminders, while [Xero](https://www.xero.com/us/accounting-software/accounts-receivable/) also offers late-payment reminders and aging visibility. | A generic reminder product has a weak wedge. | That users are satisfied with the process after a buyer disputes an invoice or makes a payment commitment. |
 | [Chaser's published pricing](https://www.chaserhq.com/chaser-pricing) starts at $259/month for its Compact software plan in the US; its Care service, which includes payment-query and dispute management, starts at $1,199/month. | More involved collections workflows can support meaningful spend. | That a small firm will pay for a standalone local tool. Chaser includes much more software and human service. |
 
@@ -22,7 +22,7 @@ The core **inference** is that a small firm may value a simple exception board b
 
 ## Competition
 
-| Alternative | Verified capability | Consequence for Duekrio |
+| Alternative | Verified capability | Consequence for Orvaket |
 | --- | --- | --- |
 | [QuickBooks Online](https://quickbooks.intuit.com/learn-support/en-us/help-article/invoicing/send-invoice-reminders-automatically-manually/L84cQjpxo_US_en_US), [Xero](https://www.xero.com/us/accounting-software/accounts-receivable/) | Invoice status, aging information, and automatic reminders. | Stay beside the existing ledger; avoid rebuilding invoicing, payment acceptance, or generic nudges. |
 | [Upflow](https://upflow.io/accounts-receivable-management-software) | Shared collection timeline, disputes, customer portal, payment links, and explicit [promise-to-pay tracking](https://support.upflow.io/hc/en-us/articles/32620736012945-Promise-to-pay). | Promise tracking itself is an existing feature, not a new category. |

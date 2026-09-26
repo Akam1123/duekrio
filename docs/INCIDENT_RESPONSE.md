@@ -1,6 +1,6 @@
-# Incident response — Duekrio early access
+# Incident response — Orvaket free app
 
-**Scope:** the public static site, repository, deployment accounts, and browser-only invoice workspace. This is an operating checklist to use during an actual event, not proof that an event occurred or that notice rules apply. Keep it with the [security audit](SECURITY_AUDIT.md) and [legal review](LEGAL_RISK_REVIEW.md).
+**Scope:** the public static site, repository, deployment accounts, and browser-only invoice workspace, including old Duekrio and Duenara origins that remain for migration. This is an operating checklist to use during an actual event, not proof that an event occurred or that notice rules apply. Keep it with the [security audit](SECURITY_AUDIT.md) and [legal review](LEGAL_RISK_REVIEW.md).
 
 ## First actions
 
@@ -13,7 +13,7 @@
 
 - Identify the actual operator, jurisdictions, customer relationships, categories of personal data, incident timeline, likely exposure, and existing contractual promises. Preserve evidence and seek qualified legal/security advice for applicable notice deadlines and recipients. The [FTC small-business guide](https://www.ftc.gov/business-guidance/resources/data-breach-response-guide-business) and [Israeli authority's serious-incident reporting service](https://www.gov.il/he/service/report-of-data-breach) are starting points where applicable, not universal deadlines.
 - Prepare a plain factual notice only after confirming the known facts: what happened, what data may be affected, what has been contained, what visitors can do with local backups, and how updates will be provided. Do not make unsupported assurances that data was never accessed or that a fix eliminates all risk.
-- GitHub [private vulnerability reporting](https://github.com/Akam1123/duekrio/security/advisories/new) is available for software security findings. The [privacy page](../public/privacy/index.html) now lists an email for private customer and privacy requests; its delivery has not been tested, and a full legal operator identity has not been verified. Public GitHub Issues are unsuitable for confidential customer reports. Confirm the real recipient and applicable notice duties during an incident; see [LEGAL_RISK_REVIEW.md](LEGAL_RISK_REVIEW.md).
+- GitHub [private vulnerability reporting](https://github.com/Akam1123/orvaket/security/advisories/new) is available for software security findings. The [privacy page](../public/privacy/index.html) lists an email for private customer and privacy requests; its delivery has not been tested, and a full legal operator identity has not been verified. Public GitHub Issues are unsuitable for confidential customer reports. Confirm the real recipient and applicable notice duties during an incident; see [LEGAL_RISK_REVIEW.md](LEGAL_RISK_REVIEW.md).
 
 ## Recovery
 
