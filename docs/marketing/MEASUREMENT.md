@@ -1,6 +1,6 @@
 # Launch measurement and decision sheet
 
-**Status: checked free launch live at [orvaket.pages.dev](https://orvaket.pages.dev/).** Initial distribution facts: six URLs submitted to IndexNow with HTTP 202, checked repository metadata, and a public [GitHub v0.1.0 release](https://github.com/Akam1123/orvaket/releases/tag/v0.1.0). No indexing, visitor count, active user, outreach, or pilot activity is inferred from those actions. The assistant stores actual distribution and pilot notes in a **private** file outside this public repository. This document is a blank template and definitions; it contains no customer or prospect data and creates no task for the user.
+**Status: checked free launch live at [orvaket.pages.dev](https://orvaket.pages.dev/).** Distribution facts: six URLs submitted to IndexNow twice (HTTP 202, then 200), checked repository metadata, a public [GitHub v0.1.0 release](https://github.com/Akam1123/orvaket/releases/tag/v0.1.0), a live [guide example](https://orvaket.pages.dev/resources/weekly-ar-review-checklist/), and one [Open App Scout submission](https://github.com/tortuvshin/open-apps/pull/343) still awaiting upstream review. No indexing, visitor count, active user, outreach, or pilot activity is inferred from those actions. The assistant stores actual distribution and pilot notes in a **private** file outside this public repository. This document is a blank template and definitions; it contains no customer or prospect data and creates no task for the user.
 
 ## Weekly scorecard
 
