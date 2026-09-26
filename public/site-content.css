@@ -4,6 +4,7 @@
 .hero .meta{color:#4d6759}
 
 /* Shared keyboard focus and motion preferences for content pages. */
+.guide-shot{margin:28px 0 34px}.guide-shot a{display:block}.guide-shot img{display:block;width:100%;height:auto;border:1px solid #dbe8df;border-radius:14px;box-shadow:0 12px 32px rgba(28,67,44,.08)}.guide-shot figcaption{margin-top:10px;color:#587367;font-size:14px;line-height:1.5}
 :is(a,button,summary,[tabindex]):focus-visible{outline:3px solid #146f60;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.card:hover{transform:none}}
 .kit-status{display:inline-block;margin-top:24px;padding:10px 15px;border:1px solid #a9d7bb;border-radius:999px;background:#eef8ef;color:#245a47;font-size:14px}
