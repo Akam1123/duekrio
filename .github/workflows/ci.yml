@@ -21,9 +21,30 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm test
       - run: npm run build
-      - run: git diff --exit-code -- Duekrio-offline.html Duenara-offline.html PromiseLedger-offline.html
+      - run: git diff --exit-code -- Orvaket-offline.html Duekrio-offline.html Duenara-offline.html PromiseLedger-offline.html
       - run: npm run build:hosted
         env:
           # Build-only placeholder, not a claimed deployment URL.
           # Production must use the exact hostname assigned by Pages.
-          PUBLIC_ORIGIN: https://qa-duekrio.pages.dev/
+          PUBLIC_ORIGIN: https://qa-orvaket.pages.dev/
+      - run: npm run verify:hosted
+        env:
+          PUBLIC_ORIGIN: https://qa-orvaket.pages.dev/
+      - run: npm run build:hosted
+        env:
+          PUBLIC_ORIGIN: https://duekrio.pages.dev/
+      - run: npm run verify:hosted
+        env:
+          PUBLIC_ORIGIN: https://duekrio.pages.dev/
+      - run: npm run build:hosted
+        env:
+          PUBLIC_ORIGIN: https://duenara.pages.dev/
+      - run: npm run verify:hosted
+        env:
+          PUBLIC_ORIGIN: https://duenara.pages.dev/
+      - run: npm run build:hosted
+        env:
+          PUBLIC_ORIGIN: https://orvaket.pages.dev/
+      - run: npm run verify:hosted
+        env:
+          PUBLIC_ORIGIN: https://orvaket.pages.dev/
